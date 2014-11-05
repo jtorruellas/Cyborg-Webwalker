@@ -54,8 +54,7 @@ public class WebwalkerGame {
             while (runnerClicks > 0) {
                 renderCorpBoard(corp);
                 System.out.println("Corp Console: ");
-                Scanner reader = new Scanner(System.in);
-                String command = reader.nextLine();
+                String command = getStringFromUser();
                 if ("rez ice".equals(command)) {
                     CorpCard ice = getIceCard(corp, false);
                     if (ice != null && !ice.isRezzed()) {
@@ -70,7 +69,13 @@ public class WebwalkerGame {
                             System.out.println("Corp does not rez ice");
                         }
                     }
-                } else if ("trash ice".equals(command)) {
+                } else if ("derez ice".equals(command)) {
+                    CorpCard ice = getIceCard(corp, false);
+                    if (ice != null && ice.isRezzed()) {
+                        ice.derez();
+                        System.out.println("Corp forced to derez " + ice.getName());
+                    }
+                }else if ("trash ice".equals(command)) {
                     CorpCard ice = getIceCard(corp, true);
                 } else if ("end turn".equals(command)) {
                     runnerClicks = 0;
@@ -94,6 +99,7 @@ public class WebwalkerGame {
                     System.out.println("ICE is numberes from top to bottom, starting with 1.");
                     System.out.println("Valid commands:");
                     System.out.println("rez ice");
+                    System.out.println("derez ice");
                     System.out.println("trash ice");
                     System.out.println("access server");
                     System.out.println("install card");

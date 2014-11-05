@@ -108,7 +108,9 @@ public class CorpCard extends Card {
             return trashCost;
     }
     public void rez() {
-        //need to reduce display credits by rez cost
         rezzed = true;
+    }
+    public void derez() {
+        rezzed = false;
     }
 }
