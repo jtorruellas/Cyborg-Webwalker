@@ -111,6 +111,11 @@ public class WebwalkerGame {
                 } else if ("mill RnD".equals(command) || "mill rnd".equals(command)) {
                     corp.millRnD();
                     System.out.println("Corp forced to trash top card of RnD");
+                } else if ("adjust creds".equals(command)) {
+                    System.out.println("How many creds?");
+                    int creds = getIntFromUser(-10,10);
+                    corp.gainCreds(creds);
+                    System.out.println("Corp gains ");
                 }
                 else if ("install card".equals(command)) {
                     System.out.println("What card?");
@@ -132,6 +137,8 @@ public class WebwalkerGame {
                     System.out.println("access server");
                     System.out.println("expose asset");
                     System.out.println("expose ice");
+                    System.out.println("mill RnD");
+                    System.out.println("adjust creds");
                     System.out.println("install card");
                     System.out.println("add virus");
                     System.out.println("end turn\n");
@@ -159,7 +166,7 @@ public class WebwalkerGame {
                 return 0;
             }
             if (val > max || val < min) {
-                System.out.println("Incorrect input: out of range 1 to " + max);
+                System.out.println("Incorrect input: out of range " + min + " to " + max);
                 return -1;
             } else {
                 return val;
