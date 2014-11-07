@@ -33,7 +33,7 @@ public class WebwalkerGame {
         int runnerPoints = 0;
         int turns = 0;
 
-        while (runnerPoints < 7 && corp.getCorpScore() < 99) {
+        while (runnerPoints < 7 && corp.getCorpScore() < 7) {
             System.out.println("\n\n*** " + (turns++) + " ***\n"); 
             corp.resetClicks(3);
             corp.preTurn();
@@ -43,6 +43,7 @@ public class WebwalkerGame {
                 System.out.println("\nClick " + (4-corp.getClicks()) + ": ");
                 if (corp.spendClick()) {
                     corp.removeClick();
+                    corp.cleanupServers();
                     renderCorpBoard(corp);
                     Scanner reader = new Scanner(System.in);
                     System.out.println("Press enter to continue");
@@ -52,6 +53,7 @@ public class WebwalkerGame {
             }
             System.out.println("Corp ends turn");
             corp.discardDownToLimit();
+            
             
             runnerClicks = 3;
             List<Server> serversAccessed = new ArrayList<Server>();
@@ -87,6 +89,7 @@ public class WebwalkerGame {
                     System.out.println("Which server?");
                     int serverNumber = getIntFromUser(1, corp.getServers().size());
                     runnerPoints = accessCardsFromServer(corp.getServerByNumber(serverNumber - 1), runnerPoints);
+                    boolean serverRemoved = corp.cleanupServer(serverNumber - 1);
                     String isSneakdoor = null;
                     if (serverNumber == 3 && corp.getRunnerCardByName("Sneakdoor Beta") != null) {
                         System.out.println("Was Sneakdoor Beta used?");
@@ -94,7 +97,7 @@ public class WebwalkerGame {
                     }
                     if (isSneakdoor != null && "yes".equals(isSneakdoor)) {
                         serversAccessed.add(corp.getServerByNumber(0)); //archives is weak
-                    } else {
+                    } else if (!serverRemoved) {
                         serversAccessed.add(corp.getServerByNumber(serverNumber-1));
                     }
                 } else if ("expose asset".equals(command)) {
@@ -195,6 +198,12 @@ public class WebwalkerGame {
             CorpCard card = serverAssets.get(i);
             if (card.isAgenda()) {
                 System.out.println("Accessing: " + card.getActualName() + ". Trash for 0, steal, or leave?");
+            } else if (card.isTrap()) {
+                System.out.println("Accessing: " + card.getActualName() + ".");
+                if (!(card.getCost() > corp.getDisplayCreds())) {
+                    corp.spendReservedCreds(card.getCost());
+                    System.out.println("Corp spends " + card.getCost() + " to trigger trap. Trash for " + card.getTrashCost() + " or leave?");
+                }
             } else if (card.getTrashCost() < 99) {
                 System.out.println("Accessing: " + card.getActualName() + ". Trash for " + card.getTrashCost() +" or leave?");
             } else {

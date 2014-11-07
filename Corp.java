@@ -88,7 +88,8 @@ public class Corp {
             CardAbility ca = new CardAbility();
             List<String> preTurnAssets = ca.getPreTurnAssets();
             if (asset != null && !asset.isAgenda() && !asset.isTrap()) {
-                if (!asset.isRezzed()) {
+                if (!asset.isRezzed() && !(asset.getCost() > getDisplayCreds())) {
+                    spendReservedCreds(asset.getCost());
                     asset.rez();
                     System.out.println("Corp rezzes " + asset.getName());
                 }
@@ -187,7 +188,7 @@ public class Corp {
             }
             reserveCreds(card.getCost());
         } else if (!card.isAgenda()) {
-            spendCreds(card.getCost());
+            reserveCreds(card.getCost());
         }
         if (card.isRegion() && server.hasRegion()) {
             return false;
@@ -214,7 +215,7 @@ public class Corp {
         if (card.isIce()) {
             reserveCreds(card.getCost());
         } else if (!card.isAgenda()) {
-            spendCreds(card.getCost());
+            reserveCreds(card.getCost());
         }
         Server newServer = new Server(card);
         hq.getAssets().remove(card);
@@ -250,7 +251,7 @@ public class Corp {
     public void trashCardFromServer(CorpCard card, Server server) {
         debugPrint("debug trashCardFromServer");
         if (server.isRemote() && server.getAsset() != null && !server.getAsset().isAgenda() && !server.getAsset().isTrap() && !server.getAsset().isRezzed()) {
-            gainCreds(server.getAsset().getCost());
+            refundCreds(server.getAsset().getCost());
         }
         server.getAssets().remove(card);
         server.removeAsset();
@@ -318,6 +319,25 @@ public class Corp {
     }
 
     // =========================================================== Utility Functions
+    public void cleanupServers() {
+        List<Server> serversToRemove = new ArrayList<Server>();
+        for (Server server : c_servers) {
+            if (server.isRemote() && server.getIce().isEmpty() && server.getAssets().isEmpty() && server.getAsset() == null) {
+                serversToRemove.add(server);
+            }
+        }
+        for (Server server : serversToRemove) {
+            c_servers.remove(server);
+        }
+    }
+    public boolean cleanupServer(int serverNumber) {
+        Server server = getServerByNumber(serverNumber);
+        if (server.isRemote() && server.getIce().isEmpty() && server.getAssets().isEmpty() && server.getAsset() == null) {
+           c_servers.remove(server);
+           return true;
+        }
+        return false;
+    }
     public void trashCard(CorpCard card) {
         archives.getAssets().add(card);
     }
