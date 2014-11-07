@@ -18,18 +18,22 @@ public class WebwalkerGame {
             debugMode = ("debug".equals(args[1]));
         }
 
-        List<CorpCard> deck = buildDeck(corpDeckFilename);
-        corp = new Corp(deck, debugMode);
+        Map<String, List<CorpCard>> deckWithIdentity = buildDeck(corpDeckFilename);
+        String identity = "";
+        for (String s :deckWithIdentity.keySet()) {
+            identity = s;
+        }
+        corp = new Corp(identity, deckWithIdentity.get(identity), debugMode);
         if(corp.mulligan()) {
             System.out.println("Corp takes a mulligan");
-            corp = new Corp(deck, debugMode);
+            corp = new Corp(identity, deckWithIdentity.get(identity), debugMode);
         }
 
         int runnerClicks = 4;
         int runnerPoints = 0;
         int turns = 0;
 
-        while (runnerPoints < 7 && corp.getCorpScore() < 7) {
+        while (runnerPoints < 7 && corp.getCorpScore() < 99) {
             System.out.println("\n\n*** " + (turns++) + " ***\n"); 
             corp.resetClicks(3);
             corp.preTurn();
@@ -83,8 +87,29 @@ public class WebwalkerGame {
                     System.out.println("Which server?");
                     int serverNumber = getIntFromUser(1, corp.getServers().size());
                     runnerPoints = accessCardsFromServer(corp.getServerByNumber(serverNumber - 1), runnerPoints);
-                    serversAccessed.add(corp.getServerByNumber(serverNumber-1));
-                } else if ("install card".equals(command)) {
+                    String isSneakdoor = null;
+                    if (serverNumber == 3 && corp.getRunnerCardByName("Sneakdoor Beta") != null) {
+                        System.out.println("Was Sneakdoor Beta used?");
+                        isSneakdoor = getStringFromUser();
+                    }
+                    if (isSneakdoor != null && "yes".equals(isSneakdoor)) {
+                        serversAccessed.add(corp.getServerByNumber(0)); //archives is weak
+                    } else {
+                        serversAccessed.add(corp.getServerByNumber(serverNumber-1));
+                    }
+                } else if ("expose asset".equals(command)) {
+                    System.out.println("Which server?");
+                    int serverNumber = getIntFromUser(4, corp.getServers().size());
+                    CorpCard asset = corp.getServerByNumber(serverNumber-1).getAsset();
+                    System.out.println("Corp forced to reveal " + asset.getActualName());
+                } else if ("expose ice".equals(command)) {
+                    CorpCard ice = getIceCard(corp, false);
+                    System.out.println("Corp forced to reveal " + ice.getActualName());
+                } else if ("mill RnD".equals(command) || "mill rnd".equals(command)) {
+                    corp.millRnD();
+                    System.out.println("Corp forced to trash top card of RnD");
+                }
+                else if ("install card".equals(command)) {
                     System.out.println("What card?");
                     String cardName = getStringFromUser();
                     corp.addRunnerCard(cardName);
@@ -102,6 +127,8 @@ public class WebwalkerGame {
                     System.out.println("derez ice");
                     System.out.println("trash ice");
                     System.out.println("access server");
+                    System.out.println("expose asset");
+                    System.out.println("expose ice");
                     System.out.println("install card");
                     System.out.println("add virus");
                     System.out.println("end turn\n");
@@ -274,8 +301,8 @@ public class WebwalkerGame {
         System.out.println(padToN(clicks, dividerLayer.length() - 2) + "||"); 
         System.out.println(padToN(handSize, dividerLayer.length() - 2) + "||"); 
         List<CorpCard> hq = corp.getHQ().getAssets();
-        for (Card card : hq) {
-            debugPrint((padToN("|| Card : " + card.getName(), dividerLayer.length() - 2) + "||")); 
+        for (CorpCard card : hq) {
+            debugPrint((padToN("|| Card : " + card.getActualName(), dividerLayer.length() - 2) + "||")); 
         }
         List<Server> servers = corp.getWeakServers();
         for (Server server : servers) {
@@ -295,12 +322,21 @@ public class WebwalkerGame {
         }
         return s;
     }
-
-    public static List<CorpCard> buildDeck(String corpDeckFilename) {
+    public static boolean verifyIdentity(String identity) {
+        List<String> identities = Arrays.asList("Haas-Bioroid: Engineering the Future","Jinteki - Replicating Perfection","Other Jinteki");
+        return identities.contains(identity);
+    }
+    public static Map<String, List<CorpCard>> buildDeck(String corpDeckFilename) {
         List<CorpCard> deck = new ArrayList<CorpCard>();
+        String identity = null;
         try {
             BufferedReader in = new BufferedReader(new FileReader(corpDeckFilename));
+            identity = in.readLine();
             String str;
+            if (!verifyIdentity(identity)) {
+                System.out.println("Incorrect identity name.  Please verify deck and run again.");
+                return null;
+            }
             while ((str = in.readLine()) != null) {
                 String[] parts = str.split(",");
                 int quantity = Integer.parseInt(parts[0]);
@@ -326,7 +362,9 @@ public class WebwalkerGame {
         } catch (Exception e) {
             System.out.println("debug error building deck: " + e.getMessage());
         }
-        return deck;
+        Map<String, List<CorpCard>> identityMap = new HashMap<String, List<CorpCard>>();
+        identityMap.put(identity, deck);
+        return identityMap;
     }
 
     public static void debugPrint(String s) {

@@ -49,7 +49,7 @@ public class CorpCard extends Card {
         return "Upgrade".equals(subType);
     }
     public boolean isOperation() {
-        return "Operation".equals(subType);
+        return "Operation".equals(type);
     }
     public boolean isMoneyAsset() {
         return "Money Asset".equals(subType);
@@ -62,6 +62,9 @@ public class CorpCard extends Card {
     }
     public void advance() {
         advancement++;
+    }
+    public void unadvance() {
+        advancement--;
     }
     public int getAdvancement() {
         return advancement;

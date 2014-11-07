@@ -22,7 +22,8 @@ public class Corp {
     private boolean debugMode = false;
 
     // ===========================================================Initialize Corp
-    public Corp(List<CorpCard> deck, boolean debugMode) {
+    public Corp(String identity, List<CorpCard> deck, boolean debugMode) {
+        corpName = identity;
         setDeck(deck);
         this.debugMode = debugMode;
         Collections.shuffle(deck);
@@ -185,7 +186,7 @@ public class Corp {
                 spendCreds(server.getIce().size()) ;
             }
             reserveCreds(card.getCost());
-        } else {
+        } else if (!card.isAgenda()) {
             spendCreds(card.getCost());
         }
         if (card.isRegion() && server.hasRegion()) {
@@ -205,20 +206,21 @@ public class Corp {
             System.out.println("debug " + card.getName() + " not added to DB");
         }
         hq.getAssets().remove(card);
+        trashCard(card);
         return true;
     }
     public boolean createServer(CorpCard card) {
         debugPrint("debug createServer");
         if (card.isIce()) {
             reserveCreds(card.getCost());
-        } else {
+        } else if (!card.isAgenda()) {
             spendCreds(card.getCost());
         }
         Server newServer = new Server(card);
         hq.getAssets().remove(card);
         c_servers.add(newServer);
         System.out.println("Corp installs " + card.getName() + " on a new server");
-        if ("HB1".equals(corpName) && !usedAbility) {
+        if ("Haas-Bioroid: Engineering the Future".equals(corpName) && !usedAbility) {
             usedAbility = true;
             gainCred();
         }
@@ -233,12 +235,8 @@ public class Corp {
             shuffleHand();
             debugPrint("Asset size " + hq.getAssets().size());
             debugPrint("hand limit " + c_handLimit);
-            if (!hq.getAssets().get(0).isAgenda()) {
-                hq.getAssets().remove(hq.getAssets().get(0));
-                i++;
-            }
-            if (j>5) {
-                hq.getAssets().remove(hq.getAssets().get(0));
+            if (!hq.getAssets().get(0).isAgenda() || j>5) {
+                trashCard(hq.getAssets().remove(0));
                 i++;
             }
             j++;
@@ -256,11 +254,15 @@ public class Corp {
         }
         server.getAssets().remove(card);
         server.removeAsset();
+        trashCard(card);
     }
     public void stealCardFromServer(CorpCard card, Server server) {
         debugPrint("debug stealCardFromServer");
         server.getAssets().remove(card);
         server.removeAsset();
+        if ("Other Jinteki".equals(corpName)) {
+            System.out.println("Corp deals one net damage to runner");
+        }
     }
     // =========================================================== CorpCard-Triggered Actions
     public void gainCreds(int creds) {
@@ -292,6 +294,20 @@ public class Corp {
         }
         return false;
     }
+    public boolean usePreAgendaSpecialCard(List<CorpCard> playable) {
+        debugPrint("debug usePreAgendaSpecialCard");
+        CardAbility ca = new CardAbility();
+        List<String> preAgendaCards = ca.getPreAgendaCards();
+        if (preAgendaCards == null) {
+            return false;
+        }
+        for (CorpCard card : playable) {
+            if (card.isOperation() && preAgendaCards.contains(card.getActualName())) {
+                return ca.activate(card, this);
+            }
+        }
+        return false;
+    }
     public boolean drawCorpCards(int n) {
         debugPrint("debug drawCorpCards");
         for (int i=0; i<n; i++) {
@@ -302,12 +318,19 @@ public class Corp {
     }
 
     // =========================================================== Utility Functions
+    public void trashCard(CorpCard card) {
+        archives.getAssets().add(card);
+    }
     public boolean mulligan() {
         return (getCorpCardsByType(getHQ().getAssets(), "ICE").size() < 2);
     }
     public void shuffleHand() {
         debugPrint("debug shuffleHand");
         Collections.shuffle(getHQ().getAssets());
+    }
+    public void millRnD() {
+        debugPrint("debug milling RnD");
+        trashCard(rnd.getAssets().remove(0));
     }
     public boolean rezCard(CorpCard card) {
         debugPrint("debug rezCard");
@@ -335,6 +358,7 @@ public class Corp {
                         asset.rez();
                         System.out.println("Corp scores " + asset.getName() + " for " + asset.getScoreValue() + " points");
                         corpScore = corpScore + asset.getScoreValue();
+                        server.getAssets().remove(asset);
                         server.removeAsset();
                         return true;
                     } else {
@@ -481,7 +505,12 @@ public class Corp {
         return null;
     }
     public CorpCard getBestOperation(List<CorpCard> playableOperations) {
-        return playableOperations.get(0);
+        for (CorpCard card : playableOperations) {
+            if (!card.getActualName().equals("Trick of Light")) {
+                return card;
+            }
+        }
+        return null;
     }
     public CorpCard getBestAsset(List<CorpCard> playableAssets) {
         return playableAssets.get(0);
@@ -501,6 +530,9 @@ public class Corp {
             }
         }
         return (totalVirus > 8);
+    }
+    public void reactToRunner() {
+
     }
 
 // =========================================================== Spend Click functions
@@ -583,6 +615,10 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
         List<CorpCard> playable = getPlayableCorpCards();
         CorpCard moneyAsset = getMoneyAsset();
 
+        if (usePreAgendaSpecialCard(playable)) {
+            return true;
+        }
+
         //Score agenda
         if (scoreOrAdvanceAgenda()) {
             return true;
@@ -590,6 +626,8 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
         if (advanceTrap()) {
             return true;
         }
+
+        reactToRunner();
 
         if (c_clicks > 2) {
             if (clearVirusCounters()) {
