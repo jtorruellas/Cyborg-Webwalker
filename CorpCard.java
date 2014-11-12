@@ -60,6 +60,9 @@ public class CorpCard extends Card {
     public boolean isTrap() {
         return "Trap".equals(subType);
     }
+    public boolean isTrap(String server) {
+        return ("Trap".equals(subType) && attributes.contains(server));
+    }
     public void advance() {
         advancement++;
     }

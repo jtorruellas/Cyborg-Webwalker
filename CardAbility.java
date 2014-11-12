@@ -53,10 +53,30 @@ public class CardAbility {
             corp.drawCorpCards(1);
             return true;
         }
-        if ("Trick of Light".equals(card.getName())) {
-            if (useTrickOfLight(corp)) {
-                return true;
+        if ("Accelerated Beta Test".equals(card.getName())) {
+            System.out.println("Accelerated Beta Test triggers");
+            for (int i=0; i<3; i++) {
+                CorpCard topCard = corp.getServerByNumber(1).getAssets().remove(0);
+                if (!topCard.isIce()) {
+                    System.out.println("Corp trashes card " + (i+1));
+                    corp.trashCard(topCard);
+                } else {
+                    Server server = null;
+                    topCard.rez();
+                    if (!corp.getWeakServers().isEmpty()) {
+                        server = corp.getWeakServers().get(0);
+                    } else if (corp.getServerByNumber(0).getIce().size() == 0) {
+                        server = corp.getServerByNumber(0);
+                    } else {
+                        server = (corp.getServerByNumber(1).getIce().size() < corp.getServerByNumber(2).getIce().size()) ? corp.getServerByNumber(1) : corp.getServerByNumber(2);
+                    }
+                    if (server != null) {
+                        server.addCard(topCard);
+                        System.out.println("Corp installs and rezzes " + topCard.getActualName() + " on " + server.getName());
+                    }
+                }
             }
+            return true;
         }
         return false;
     }

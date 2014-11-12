@@ -45,6 +45,9 @@ public class Server {
     public boolean isHQ() {
         return "HQ".equals(name);
     }
+    public boolean isArchives() {
+        return "Archives".equals(name);
+    }
     public boolean isRemote() {
         return "Remote".equals(name);
     }

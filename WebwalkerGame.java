@@ -38,16 +38,15 @@ public class WebwalkerGame {
             corp.resetClicks(3);
             corp.preTurn();
             corp.drawCorpCards(1);
-            System.out.println("Corp performs mandatory draw");  
+            System.out.println("Corp begins turn and performs mandatory draw");  
             while (corp.getClicks() > 0) {
-                System.out.println("\nClick " + (4-corp.getClicks()) + ": ");
+                renderCorpBoard(corp);
+                System.out.println("Click " + (4-corp.getClicks()) + ": ");
                 if (corp.spendClick()) {
                     corp.removeClick();
                     corp.cleanupServers();
-                    renderCorpBoard(corp);
                     Scanner reader = new Scanner(System.in);
-                    System.out.println("Press enter to continue");
-                    //get user input for a
+                    System.out.println("\nPress enter to continue");
                     reader.nextLine();
                 }
             }
@@ -56,10 +55,9 @@ public class WebwalkerGame {
             
             
             runnerClicks = 3;
-            List<Server> serversAccessed = new ArrayList<Server>();
+            renderCorpBoard(corp);
             while (runnerClicks > 0) {
-                renderCorpBoard(corp);
-                System.out.println("Corp Console: ");
+                System.out.print("run>");
                 String command = getStringFromUser();
                 if ("rez ice".equals(command)) {
                     CorpCard ice = getIceCard(corp, false);
@@ -70,20 +68,23 @@ public class WebwalkerGame {
                             corp.spendReservedCreds(ice.getCost());
                             corp.spendCreds(extraRezCost);
                             ice.rez();
-                            System.out.println("Corp rezzes " + ice.getName());
+                            renderCorpBoard(corp);
+                            System.out.println("Corp rezzes " + ice.getName() + "\n");
                         } else {
-                            System.out.println("Corp does not rez ice");
+                            renderCorpBoard(corp);
+                            System.out.println("Corp does not rez ice\n");
                         }
                     }
                 } else if ("derez ice".equals(command)) {
                     CorpCard ice = getIceCard(corp, false);
                     if (ice != null && ice.isRezzed()) {
                         ice.derez();
+                        renderCorpBoard(corp);
                         System.out.println("Corp forced to derez " + ice.getName());
                     }
                 }else if ("trash ice".equals(command)) {
                     CorpCard ice = getIceCard(corp, true);
-                } else if ("end turn".equals(command)) {
+                } else if ("end turn".equals(command) || "end".equals(command)) {
                     runnerClicks = 0;
                 } else if ("access server".equals(command)) {
                     System.out.println("Which server?");
@@ -96,18 +97,23 @@ public class WebwalkerGame {
                         isSneakdoor = getStringFromUser();
                     }
                     if (isSneakdoor != null && "yes".equals(isSneakdoor)) {
-                        serversAccessed.add(corp.getServerByNumber(0)); //archives is weak
+                        corp.addServerAccessed(corp.getServerByNumber(0)); //archives is weak
                     } else if (!serverRemoved) {
-                        serversAccessed.add(corp.getServerByNumber(serverNumber-1));
+                        corp.addServerAccessed(corp.getServerByNumber(serverNumber-1));
                     }
+                    renderCorpBoard(corp);
                 } else if ("expose asset".equals(command)) {
-                    System.out.println("Which server?");
-                    int serverNumber = getIntFromUser(4, corp.getServers().size());
-                    CorpCard asset = corp.getServerByNumber(serverNumber-1).getAsset();
-                    System.out.println("Corp forced to reveal " + asset.getActualName());
+                    if (corp.getServers().size() > 3) {
+                        System.out.println("Which server?");
+                        int serverNumber = getIntFromUser(4, corp.getServers().size());
+                        CorpCard asset = corp.getServerByNumber(serverNumber-1).getAsset();
+                        System.out.println("Corp forced to expose " + asset.getActualName());
+                    } else {
+                        System.out.println("No installed assets to expose");
+                    }
                 } else if ("expose ice".equals(command)) {
                     CorpCard ice = getIceCard(corp, false);
-                    System.out.println("Corp forced to reveal " + ice.getActualName());
+                    System.out.println("Corp forced to expose " + ice.getActualName());
                 } else if ("mill RnD".equals(command) || "mill rnd".equals(command)) {
                     corp.millRnD();
                     System.out.println("Corp forced to trash top card of RnD");
@@ -115,17 +121,25 @@ public class WebwalkerGame {
                     System.out.println("How many creds?");
                     int creds = getIntFromUser(-10,10);
                     corp.gainCreds(creds);
-                    System.out.println("Corp gains ");
-                }
-                else if ("install card".equals(command)) {
-                    System.out.println("What card?");
+                    System.out.println("Corp gains " + creds + " creds.");
+                } else if ("install program".equals(command)) {
+                    System.out.println("What program?");
                     String cardName = getStringFromUser();
                     corp.addRunnerCard(cardName);
+                } else if ("trash program".equals(command)) {
+                    System.out.println("What program?");
+                    String cardName = getStringFromUser();
+                    corp.removeRunnerCard(cardName);
                 } else if ("add virus".equals(command)) {
-                    System.out.println("What card?");
+                    System.out.println("On which card?");
                     String cardName = getStringFromUser();
                     RunnerCard card = corp.getRunnerCardByName(cardName);
-                    card.addVirusCounter();
+                    if (card == null) {
+                        System.out.println("No card with that name exists.");
+                    } else {
+                        card.addVirusCounter();
+                        System.out.println(card.getName() + " now has " + card.getVirusCounters() + " virus counters");
+                    }
                 } else if ("help".equals(command)) {
                     System.out.println("\n****** Help Menu ******");
                     System.out.println("Servers are numbered left to right, starting with 1.");
@@ -139,12 +153,17 @@ public class WebwalkerGame {
                     System.out.println("expose ice");
                     System.out.println("mill RnD");
                     System.out.println("adjust creds");
-                    System.out.println("install card");
+                    System.out.println("install program");
+                    System.out.println("trash program");
                     System.out.println("add virus");
                     System.out.println("end turn\n");
-                }
+                } else if ("^C".equals(command)) {
+                    System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for list of valid commands.");
+                } 
+                else if (!"".equals(command)) {
+                    System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for list of valid commands.");
+                } 
             }
-            corp.setServersAccessed(serversAccessed);
         }
         String winner = (runnerPoints > corp.getCorpScore()) ? "runner" : "corp";
         System.out.println("***** The " + winner + " wins the match! *****");
@@ -190,8 +209,7 @@ public class WebwalkerGame {
 
     public static int accessCardsFromServer(Server server, int runnerPoints) {
         System.out.println("How many cards?");
-        Scanner reader = new Scanner(System.in);
-        int numberAccessed = reader.nextInt();
+        int numberAccessed = getIntFromUser(0,99);
 
         if (!server.isRnD()) {
             Collections.shuffle(server.getAssets());
@@ -201,35 +219,65 @@ public class WebwalkerGame {
         List<CorpCard> cardsToSteal = new ArrayList<CorpCard>();
         numberAccessed = (numberAccessed > serverAssets.size()) ? serverAssets.size() : numberAccessed;
         System.out.println("Accessing " + numberAccessed + " cards.");
-        for (int i=0; i<numberAccessed;i++) {
-            CorpCard card = serverAssets.get(i);
-            if (card.isAgenda()) {
-                System.out.println("Accessing: " + card.getActualName() + ". Trash for 0, steal, or leave?");
-            } else if (card.isTrap()) {
-                System.out.println("Accessing: " + card.getActualName() + ".");
-                if (!(card.getCost() > corp.getDisplayCreds())) {
-                    corp.spendReservedCreds(card.getCost());
-                    System.out.println("Corp spends " + card.getCost() + " to trigger trap. Trash for " + card.getTrashCost() + " or leave?");
-                }
-            } else if (card.getTrashCost() < 99) {
-                System.out.println("Accessing: " + card.getActualName() + ". Trash for " + card.getTrashCost() +" or leave?");
-            } else {
-                System.out.println("Accessing: " + card.getActualName() + ". Leave or trash with special ability?");
-            }
-            String command = getStringFromUser();
-            if ("trash".equals(command)) {
-                cardsToTrash.add(card);
-            } else if ("steal".equals(command)) {
+        if (server.isArchives()) {
+            for (int i=0; i<numberAccessed;i++) {
+                CorpCard card = serverAssets.get(i);
                 if (card.isAgenda()) {
-                    runnerPoints = runnerPoints + card.getScoreValue();
-                    cardsToSteal.add(card);
-                    System.out.println("Runner steals agenda and has " + runnerPoints + " points");
+                    System.out.println("Accessing: " + card.getActualName() + ". Steal or leave?");
+                } else if (card.isTrap(server.getName())) {
+                    System.out.println("Accessing: " + card.getActualName() + ".");
+                    if (!(card.getCost() > corp.getDisplayCreds())) {
+                        corp.spendReservedCreds(card.getCost());
+                        System.out.println("Corp spends " + card.getCost() + " to trigger trap.");
+                    }
+                    System.out.println("Trash " + card.getActualName() + " for " + card.getTrashCost() + " or leave?");
                 } else {
-                    System.out.println("Cannot steal card");
-                    i--;
+                    System.out.println("Accessing: " + card.getActualName() + ". Press enter to continue.");
                 }
-            } else if ("jack out".equals(command)) {
-                break;
+                String command = getStringFromUser();
+                if ("steal".equals(command)) {
+                    if (card.isAgenda()) {
+                        runnerPoints = runnerPoints + card.getScoreValue();
+                        cardsToSteal.add(card);
+                        System.out.println("Runner steals agenda and has " + runnerPoints + " points");
+                    } else {
+                        System.out.println("Cannot steal card");
+                        i--;
+                    }
+                }
+            }
+        } else {
+            for (int i=0; i<numberAccessed;i++) {
+                CorpCard card = serverAssets.get(i);
+                if (card.isAgenda()) {
+                    System.out.println("Accessing: " + card.getActualName() + ". Trash for 0, steal, or leave?");
+                } else if (card.isTrap(server.getName())) {
+                    System.out.println("Accessing: " + card.getActualName() + ".");
+                    if (!(card.getCost() > corp.getDisplayCreds()) && (!card.isAdvanceable() || (card.isAdvanceable() && card.getAdvancement() > 0))) {
+                        corp.spendReservedCreds(card.getCost());
+                        System.out.println("Corp spends " + card.getCost() + " to trigger trap.");
+                    }
+                    System.out.println("Trash " + card.getActualName() + " for " + card.getTrashCost() + " or leave?");
+                } else if (card.getTrashCost() < 99) {
+                    System.out.println("Accessing: " + card.getActualName() + ". Trash for " + card.getTrashCost() +" or leave?");
+                } else {
+                    System.out.println("Accessing: " + card.getActualName() + ". Leave or trash with special ability?");
+                }
+                String command = getStringFromUser();
+                if ("trash".equals(command)) {
+                    cardsToTrash.add(card);
+                } else if ("steal".equals(command)) {
+                    if (card.isAgenda()) {
+                        runnerPoints = runnerPoints + card.getScoreValue();
+                        cardsToSteal.add(card);
+                        System.out.println("Runner steals agenda and has " + runnerPoints + " points");
+                    } else {
+                        System.out.println("Cannot steal card");
+                        i--;
+                    }
+                } else if ("jack out".equals(command)) {
+                    break;
+                }
             }
         }
         for (int i = cardsToTrash.size()-1; i>=0; i--) {
@@ -267,13 +315,16 @@ public class WebwalkerGame {
         int columnWidth = 12;
 
         //Render Board
+        String serverNumberLayer = "|| ";
         String layer0 = "|| ";
         String layer1 = "|| ";
         String layer2 = "|| ";
         String layer3 = "|| ";
         String dividerLayer = "==";
         String spacingLayer = "|| ";
+        int i = 0;
         for (Server server : corp.getServers()) {
+            i++;
             String name = server.getName();
             if (server.getAsset() != null) {
                 CorpCard asset = server.getAsset();
@@ -300,8 +351,10 @@ public class WebwalkerGame {
             }
             dividerLayer = dividerLayer + "================";
             spacingLayer = spacingLayer + "             || ";
+            serverNumberLayer = serverNumberLayer + "" + padToN(i + " ", 2) + "           || ";
         }
-        System.out.println(dividerLayer);
+        System.out.println("\n" + dividerLayer);
+        System.out.println(serverNumberLayer);
         System.out.println(layer0);
         System.out.println(dividerLayer);
         System.out.println(layer1);

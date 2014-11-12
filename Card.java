@@ -40,5 +40,8 @@ public class Card {
     public void setAttributes(String attributes) {
         this.attributes = attributes;
     }
+    public boolean hasAttribute(String attribute) {
+        return attributes.contains(attribute);
+    }
 
 }
