@@ -3,7 +3,7 @@ import java.util.*;
 public class CardAbility {
     private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp");
     private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign");
-    private static List<String> preAgendaCards = Arrays.asList("Trick of Light");
+    private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
 
     public CardAbility() {
     }
@@ -34,12 +34,12 @@ public class CardAbility {
             return true;
         }
         if ("Beanstalk Royalties".equals(card.getName())) {
-            System.out.println(" and gains 3 credits");
+            System.out.println("Corp plays " + card.getName() + " for " + card.getCost() + " and gains 3 credits");
             corp.gainCreds(3);
             return true;
         }
         if ("Hedge Fund".equals(card.getName())) {
-            System.out.println(" and gains 9 credits");
+            System.out.println("Corp plays " + card.getName() + " for " + card.getCost() + " and gains 9 credits");
             corp.gainCreds(9);
             return true;
         }
@@ -48,9 +48,58 @@ public class CardAbility {
             return true;
         }
         if ("Green Level Clearance".equals(card.getName())) {
-            System.out.println(", gains 3 credits, and draws a card");
+            System.out.println("Corp plays " + card.getName() + " for " + card.getCost() + ", gains 3 credits, and draws a card");
             corp.gainCreds(3);
             corp.drawCorpCards(1);
+            return true;
+        }
+        if ("Bioroid Efficiency Research".equals(card.getName())) {
+            CorpCard ice = null;
+            for (Server server : corp.getWeakServers()) {
+                if (server.getIce().isEmpty() && !corp.getCorpCardsByType(corp.getHQ().getAssets(), "ICE").isEmpty()) {
+                    return false;
+                }
+            }
+            for (Server server : corp.getServers()) {
+                List<CorpCard> iceList = server.getIce();
+                for  (CorpCard c : iceList) {
+                    if (ice == null || (ice.getCost() < c.getCost() && !c.isRezzed())) {
+                        ice = c;
+                    }
+                }
+            }
+            if (ice != null && !ice.isRezzed()) {
+                ice.rez();
+                System.out.println("Bioroid Efficiency Research rezzes " + ice.getName() +" for no cost");
+                System.out.println("If all subroutines are broken, derez this ICE");
+                corp.refundCreds(ice.getCost());
+                corp.getHQ().getAssets().remove(card);
+                corp.trashCard(card);
+                return true;
+            }
+        }
+        if ("Mandatory Upgrades".equals(card.getName())) {
+            corp.setMaxClicks((corp.getMaxClicks()+1));
+            corp.gainClicks(1);
+            System.out.println("Mandatory Upgrades gains the Corp 1 additional click per turn (" + corp.getMaxClicks() + " total)");
+            return true;
+        }
+        if ("Priority Requisition".equals(card.getName())) {
+            CorpCard ice = null;
+            for (Server server : corp.getServers()) {
+                List<CorpCard> iceList = server.getIce();
+                for  (CorpCard c : iceList) {
+                    if (ice == null || (ice.getCost() < c.getCost() && !c.isRezzed())) {
+                        ice = c;
+                    }
+                }
+            }
+            if (ice != null) {
+                ice.rez();
+                corp.refundCreds(ice.getCost());
+                System.out.println("Priority Requisition rezzes " + ice.getName() +" for no cost");
+            }
+            
             return true;
         }
         if ("Accelerated Beta Test".equals(card.getName())) {
@@ -77,6 +126,13 @@ public class CardAbility {
                 }
             }
             return true;
+        }
+        if ("Trick of Light".equals(card.getName())) {
+            if (useTrickOfLight(corp)) {
+                corp.getHQ().getAssets().remove(card);
+                corp.trashCard(card);
+                return true;
+            }
         }
         return false;
     }

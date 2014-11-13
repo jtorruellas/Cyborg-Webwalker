@@ -7,6 +7,7 @@ public class Corp {
     private int c_displayCreds = 5;
     private int c_handLimit = 5;
     private int c_clicks = 3;
+    private int c_maxClicks = 3;
     private int corpScore = 0;
     private Server rnd = null;
     private Server hq = null;
@@ -64,6 +65,12 @@ public class Corp {
     }
     public int getClicks() {
         return c_clicks;
+    }
+    public int getMaxClicks() {
+        return c_maxClicks;
+    }
+    public void setMaxClicks(int clicks) {
+        c_maxClicks = clicks;
     }
     public int getCreds() {
         return c_creds;
@@ -208,16 +215,14 @@ public class Corp {
         return true;
     }
     public boolean playOperation(CorpCard card) {
-        System.out.print("Corp plays " + card.getName() + " for " + card.getCost());
         CardAbility ca = new CardAbility();
         if (ca.activate(card, this)) {
             spendCreds(card.getCost());
-        } else {
-            System.out.println("debug " + card.getName() + " not added to DB");
+            hq.getAssets().remove(card);
+            trashCard(card);
+            return true;
         }
-        hq.getAssets().remove(card);
-        trashCard(card);
-        return true;
+        return false;
     }
     public boolean createServer(CorpCard card) {
         debugPrint("debug createServer");
@@ -304,16 +309,19 @@ public class Corp {
         }
         return false;
     }
-    public boolean usePreAgendaSpecialCard(List<CorpCard> playable) {
+    public boolean usePreAgendaSpecialCard() {
         debugPrint("debug usePreAgendaSpecialCard");
         CardAbility ca = new CardAbility();
         List<String> preAgendaCards = ca.getPreAgendaCards();
         if (preAgendaCards == null) {
             return false;
         }
-        for (CorpCard card : playable) {
-            if (card.isOperation() && preAgendaCards.contains(card.getActualName())) {
-                return ca.activate(card, this);
+        for (CorpCard card : hq.getAssets()) {
+            if (card.isOperation() && preAgendaCards.contains(card.getActualName()) && card.getCost() <= getDisplayCreds()) {
+                if (ca.activate(card, this)) {
+                    spendCreds(card.getCost());
+                    return true;
+                }
             }
         }
         return false;
@@ -406,10 +414,7 @@ public class Corp {
                         return advanceCorpCard(asset, 1);
                     }
                 } 
-                if (advancementNeeded == 4 && c_creds >= 4 && c_clicks == 1) {
-                    return advanceCorpCard(asset, 1);
-                }
-                if (advancementNeeded == 5 && c_creds >= 5 && c_clicks == 2) {
+                if (advancementNeeded > getMaxClicks() && c_creds >= advancementNeeded && c_clicks >= (advancementNeeded-getMaxClicks())) {
                     return advanceCorpCard(asset, 1);
                 }
             }
@@ -685,7 +690,7 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
         List<CorpCard> playable = getPlayableCorpCards();
         CorpCard moneyAsset = getMoneyAsset();
 
-        if (usePreAgendaSpecialCard(playable)) {
+        if (usePreAgendaSpecialCard()) {
             return true;
         }
 

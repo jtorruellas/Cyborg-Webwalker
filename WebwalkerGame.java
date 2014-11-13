@@ -23,6 +23,7 @@ public class WebwalkerGame {
         for (String s :deckWithIdentity.keySet()) {
             identity = s;
         }
+        System.out.println("Corp is playing " + identity);
         corp = new Corp(identity, deckWithIdentity.get(identity), debugMode);
         if(corp.mulligan()) {
             System.out.println("Corp takes a mulligan");
@@ -35,13 +36,13 @@ public class WebwalkerGame {
 
         while (runnerPoints < 7 && corp.getCorpScore() < 7) {
             System.out.println("\n\n*** " + (turns++) + " ***\n"); 
-            corp.resetClicks(3);
+            corp.resetClicks(corp.getMaxClicks());
             corp.preTurn();
             corp.drawCorpCards(1);
             System.out.println("Corp begins turn and performs mandatory draw");  
             while (corp.getClicks() > 0) {
                 renderCorpBoard(corp);
-                System.out.println("Click " + (4-corp.getClicks()) + ": ");
+                System.out.println("Click " + (corp.getMaxClicks()-corp.getClicks()+1) + ": ");
                 if (corp.spendClick()) {
                     corp.removeClick();
                     corp.cleanupServers();
@@ -79,6 +80,7 @@ public class WebwalkerGame {
                     CorpCard ice = getIceCard(corp, false);
                     if (ice != null && ice.isRezzed()) {
                         ice.derez();
+                        corp.reserveCreds(ice.getCost());
                         renderCorpBoard(corp);
                         System.out.println("Corp forced to derez " + ice.getName());
                     }
@@ -361,7 +363,7 @@ public class WebwalkerGame {
         System.out.println(layer2);
         System.out.println(layer3);
         System.out.println(dividerLayer);
-        String creds = "|| Credits: " + corp.getCreds();
+        String creds = "|| Back-end Credits: " + corp.getCreds();
         String displayCreds = "|| Credits: " + corp.getDisplayCreds();
         String clicks = "|| Clicks: " + corp.getClicks();
         String handSize = "|| HQ: " + corp.getHandCount() + "/" + corp.getHandLimit();
@@ -392,7 +394,7 @@ public class WebwalkerGame {
         return s;
     }
     public static boolean verifyIdentity(String identity) {
-        List<String> identities = Arrays.asList("Haas-Bioroid: Engineering the Future","Jinteki - Replicating Perfection","Other Jinteki");
+        List<String> identities = Arrays.asList("Haas-Bioroid: Engineering the Future","Haas-Bioroid: Stronger Together","Jinteki - Replicating Perfection","Other Jinteki");
         return identities.contains(identity);
     }
     public static Map<String, List<CorpCard>> buildDeck(String corpDeckFilename) {
