@@ -84,6 +84,12 @@ public class CardAbility {
             System.out.println("Mandatory Upgrades gains the Corp 1 additional click per turn (" + corp.getMaxClicks() + " total)");
             return true;
         }
+        if ("Jackson Howard".equals(card.getName())) {
+            System.out.println("Corp activates " + card.getName() + " to draw two cards");
+            corp.drawCorpCards(1);
+            corp.drawCorpCards(1);
+            return true;
+        }
         if ("Priority Requisition".equals(card.getName())) {
             CorpCard ice = null;
             for (Server server : corp.getServers()) {
@@ -129,8 +135,6 @@ public class CardAbility {
         }
         if ("Trick of Light".equals(card.getName())) {
             if (useTrickOfLight(corp)) {
-                corp.getHQ().getAssets().remove(card);
-                corp.trashCard(card);
                 return true;
             }
         }
@@ -185,10 +189,21 @@ public class CardAbility {
             return false;
         }
         if (trap != null && advancementNeeded == 4 && agendaInstalled) {
+            CorpCard card = null;
+            for (CorpCard c : corp.getHQ().getAssets()) {
+                if ("Trick of Light".equals(c.getActualName())) {
+                    card = c;
+                }
+            }
+            if (card == null) {
+                return false;
+            }
             trap.unadvance();
             trap.unadvance();
             agenda.advance();
             agenda.advance();
+            corp.getHQ().getAssets().remove(card);
+            corp.trashCard(card);
             System.out.println("Corp plays Trick of Light to move " + trapAdvancement + " counters from one asset to another");
             return true;
         } else if (trap != null && advancementNeeded == 4 && !agendaInstalled) {
@@ -197,6 +212,15 @@ public class CardAbility {
                 return true;
             } 
         } else if (trap != null && advancementNeeded == 3 && corp.getClicks() == 3 && corp.getCreds() > 2 && !agendaInstalled) {
+            CorpCard card = null;
+            for (CorpCard c : corp.getHQ().getAssets()) {
+                if ("Trick of Light".equals(c.getActualName())) {
+                    card = c;
+                }
+            }
+            if (card == null) {
+                return false;
+            }
             corp.createServer(agenda);
             corp.removeClick();
             corp.spendCreds(1);
@@ -204,6 +228,8 @@ public class CardAbility {
             trap.unadvance();
             agenda.advance();
             agenda.advance();
+            corp.getHQ().getAssets().remove(card);
+            corp.trashCard(card);
             System.out.println("Corp plays Trick of Light to move " + trapAdvancement + " counters from one asset to another");
             return true;
         }

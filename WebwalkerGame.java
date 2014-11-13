@@ -142,6 +142,15 @@ public class WebwalkerGame {
                         card.addVirusCounter();
                         System.out.println(card.getName() + " now has " + card.getVirusCounters() + " virus counters");
                     }
+                } else if ("play current".equals(command)) {
+                    System.out.println("What current?");
+                    String cardName = getStringFromUser();
+                    Card card = new Card();
+                    card.setSide("Runner");
+                    card.setName(cardName);
+                    corp.setCurrent(card);
+                    System.out.println("Runner plays current " + cardName);
+                    renderCorpBoard(corp);
                 } else if ("help".equals(command)) {
                     System.out.println("\n****** Help Menu ******");
                     System.out.println("Servers are numbered left to right, starting with 1.");
@@ -158,6 +167,7 @@ public class WebwalkerGame {
                     System.out.println("install program");
                     System.out.println("trash program");
                     System.out.println("add virus");
+                    System.out.println("play current");
                     System.out.println("end turn\n");
                 } else if ("^C".equals(command)) {
                     System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for list of valid commands.");
@@ -379,6 +389,11 @@ public class WebwalkerGame {
         for (Server server : servers) {
             debugPrint((padToN("|| Weak Server : " + server.getName(), dividerLayer.length() - 2) + "||")); 
         }
+        Card current = corp.getCurrent();
+        if (current != null) {
+            String currentText = "|| Current: " + current.getName() + " (" + current.getSide() + ")";
+            System.out.println(padToN(currentText, dividerLayer.length() - 2) + "||"); 
+        }
         System.out.println(dividerLayer);
         System.out.println("\n");
     }
@@ -425,6 +440,7 @@ public class WebwalkerGame {
                     }
                     card.setSubType(parts[6]);
                     card.setAttributes(parts[7]);
+                    card.setSide("Corp");
                     
                     deck.add(card);
                 }

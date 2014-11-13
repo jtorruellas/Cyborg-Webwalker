@@ -10,6 +10,7 @@ public class CorpCard extends Card {
     private int subroutines = 0;
     private boolean rezzed = false;
     public int adonisCreds = 12;
+    public int trapCounter = 0;
 
     public CorpCard() {
         super.setName(new String());
@@ -53,6 +54,9 @@ public class CorpCard extends Card {
     }
     public boolean isMoneyAsset() {
         return "Money Asset".equals(subType);
+    }
+    public boolean isCardAsset() {
+        return "Card Asset".equals(subType);
     }
     public boolean isAgenda() {
         return "Agenda".equals(type);

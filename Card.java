@@ -6,6 +6,7 @@ public class Card {
     protected String type = "";
     protected String subType = "";
     protected String attributes = "";
+    protected String side = "";
 
     public void setCost(int cost) {
         this.cost = cost;
@@ -19,6 +20,12 @@ public class Card {
     public String getName() {
         return name;
     }
+    public void setSide(String side) {
+        this.side = side;
+    }
+    public String getSide() {
+        return side;
+    }
     public boolean activate(){
         return true;
     }
@@ -27,6 +34,9 @@ public class Card {
     }
     public boolean isUnique(){
         return attributes.contains("Unique");
+    }
+    public boolean isCurrent(){
+        return subType.equals("Current");
     }
     public void setType(String type) {
         this.type = type;

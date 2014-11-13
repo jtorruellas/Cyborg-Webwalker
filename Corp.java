@@ -22,6 +22,7 @@ public class Corp {
     private String corpName = "HB1";
     private boolean usedAbility = false;
     private boolean debugMode = false;
+    private Card current = null;
 
     // ===========================================================Initialize Corp
     public Corp(String identity, List<CorpCard> deck, boolean debugMode) {
@@ -92,6 +93,12 @@ public class Corp {
     }
     public int getCorpScore() {
         return corpScore;
+    }
+    public void setCurrent(Card current) {
+        this.current = current;
+    }
+    public Card getCurrent() {
+        return current;
     }
     // ===========================================================Base Actions 
     public void preTurn() {
@@ -213,6 +220,17 @@ public class Corp {
         hq.getAssets().remove(card);
         System.out.println("Corp installs " + card.getName() + " on " +server.getName());
         return true;
+    }
+    public boolean tryPlayingCurrent() {
+        debugPrint("debug tryPlayingCurrent");
+        for (CorpCard card : hq.getAssets()) {
+            if (card.isCurrent() && (current == null || "Runner".equals(current.getSide())) && card.getCost() <= getCreds()) {
+                current = card;
+                hq.getAssets().remove(card);
+                return true;
+            }
+        }
+        return false;
     }
     public boolean playOperation(CorpCard card) {
         CardAbility ca = new CardAbility();
@@ -427,9 +445,15 @@ public class Corp {
             CorpCard asset = server.getAsset();
             if (asset != null && asset.isTrap() && asset.isAdvanceable()) {
                 int advancementNeeded = 2 - asset.getAdvancement();
+                if (advancementNeeded == 0) {
+                    asset.trapCounter++;
+                }
+                if (asset.trapCounter == 5) {
+                    trashCardFromServer(asset, server);
+                }
                 if (advancementNeeded <= c_clicks && advancementNeeded <= c_creds && advancementNeeded != 0) {
                     return advanceCorpCard(asset, 1);
-                } 
+                }
                 /*
                 if (advancementNeeded == 4 && c_creds >= 4 && c_clicks == 1) {
                     return advanceCorpCard(asset, 1);
@@ -457,6 +481,17 @@ public class Corp {
         }
         return moneyAsset;
     }
+    public CorpCard getCardAsset() {
+        debugPrint("debug getCardAsset");
+        CorpCard cardAsset = null;
+        for (Server s : c_servers) {
+            if (s.getAsset() != null && s.getAsset().isCardAsset()) {
+                cardAsset = s.getAsset();
+                break;
+            }
+        }
+        return cardAsset;
+    }
     public List<Server> getWeakServers() {
         ArrayList<Server> weakServers = new ArrayList<Server>();
         for (Server server : c_servers) {
@@ -473,6 +508,16 @@ public class Corp {
         
         for (CorpCard card : playable) {
             if (type.equals(card.getType())) {
+                cardList.add(card);
+            }
+        }
+        return cardList;
+    }
+    public List<CorpCard> getCorpAssetsByAttribute(List<CorpCard> playable, String attribute) {
+        debugPrint("debug getCorpAssetsByAttribute");
+        List<CorpCard> cardList = new ArrayList<CorpCard>();
+        for (CorpCard card : playable) {
+            if (card.hasAttribute(attribute)) {
                 cardList.add(card);
             }
         }
@@ -505,7 +550,7 @@ public class Corp {
     // =========================================================== Evaluation functions
     public boolean isSuitableForAgenda(Server emptyServer) {
         debugPrint("debug isSuitableForAgenda");
-        if (emptyServer.getIce().size() > 0 && !serversAccessed.contains(emptyServer)) {
+        if (emptyServer.getIce().size() > 1 && !serversAccessed.contains(emptyServer)) {
             for (CorpCard ice : emptyServer.getIce()) {
                 if (ice.hasAttribute("Agenda")) {
                     return true;
@@ -616,7 +661,7 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
             List<Server> weakServers = getWeakServers();
             List<CorpCard> iceCorpCards = getCorpCardsByType(playable, "ICE");
             List<CorpCard> assetCorpCards = getCorpCardsByType(playable, "Asset");
-            List<CorpCard> agendaCorpCards = getCorpCardsByType(playable, "Agenda");
+            List<CorpCard> agendaCorpCards = getCorpAssetsByAttribute(playable, "Advanceable");
             List<CorpCard> operationCorpCards = getCorpCardsByType(playable, "Operation");
             Server openServer = getBestOpenServer();
             debugPrint("debug weakServers " + weakServers.size());
@@ -658,17 +703,18 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
                         if (bestIce != null && createServer(bestIce)) {
                             return true;
                         }
-                        /*
-                    } else if (!assetNeedsIce(bestAsset())) { 
-                        if (createServer(bestAsset)) {
-                            return true;
-                        }
-                        */
-                    } else { //////// this is controvertial - do you install a normally iced asset if you have no ice? safer choice above - can be done w/ some randomness
+                    } else if (!assetNeedsIce(bestAsset)) { 
                         if (createServer(bestAsset)) {
                             return true;
                         }
                     }
+                        /*
+                    else { //////// this is controvertial - do you install a normally iced asset if you have no ice? safer choice above - can be done w/ some randomness
+                        if (createServer(bestAsset)) {
+                            return true;
+                        }
+                    }
+                                            */
                 }
                 // Play ice (strengthen)
             } else if (!iceCorpCards.isEmpty()) {
@@ -689,6 +735,7 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
 
         List<CorpCard> playable = getPlayableCorpCards();
         CorpCard moneyAsset = getMoneyAsset();
+        CorpCard cardAsset = getCardAsset();
 
         if (usePreAgendaSpecialCard()) {
             return true;
@@ -710,6 +757,10 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
             }
         }
 
+        if (tryPlayingCurrent()) {
+            return true;
+        }
+
         //Look for special cards
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (useSpecialCard(playable)) {
@@ -724,8 +775,15 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
         //Nothing to play
         //Draw a card
          if (hq.getAssets().isEmpty() || (c_creds > 15) || (moneyAsset == null && oddsDrawMoneyCorpCard() && hq.getAssets().size() < c_handLimit)) {
-            if (drawCorpCard()) {
-                return true;
+            if (cardAsset == null) {
+                if (drawCorpCard()) {
+                    return true;
+                }
+            } else {
+                CardAbility ca = new CardAbility();
+                if (ca.activate(cardAsset, this)) {
+                    return true;
+                }
             }
         //Use money asset
         } 
