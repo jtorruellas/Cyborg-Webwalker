@@ -80,13 +80,16 @@ public class CorpCard extends Card {
         return scoreValue;
     }
     public boolean needsIce() {
-        return attributes.contains("Ice");
+        return hasAttribute("Ice");
     }
     public boolean isAdvanceable() {
-        return attributes.contains("Advanceable");
+        return hasAttribute("Advanceable");
     }
     public boolean isRezzed() {
         return rezzed;
+    }
+    public boolean reservedForAgenda() {
+        return (hasAttribute("Unique") && hasAttribute("Agenda"));
     }
     public void setTrashCost(int cost) {
         trashCost = cost;

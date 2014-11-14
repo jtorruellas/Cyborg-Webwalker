@@ -4,6 +4,7 @@ public class CardAbility {
     private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp");
     private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign");
     private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
+    private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei");
 
     public CardAbility() {
     }
@@ -31,6 +32,21 @@ public class CardAbility {
         if ("Pad Campaign".equals(card.getName())) {
             System.out.println(card.getName() + " triggers and gains 1 credit");
             corp.gainCreds(1);
+            return true;
+        }
+        if ("Caprice Nisei".equals(card.getName())) {
+            System.out.println(card.getName() + " triggers: let's play a game");
+            System.out.println("How many credits are you playing with? (0, 1, or 2)");
+            int runnerCreds = getIntFromUser(0,2);
+            if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
+                System.out.println("Corp spends 2 credits");
+                corp.spendCreds(2);
+            } else if (runnerCreds == 0) {
+                System.out.println("Corp spends 1 credit");
+                corp.spendCreds(1);
+            } else {
+                System.out.println("Corp spends 0 credits");
+            }
             return true;
         }
         if ("Beanstalk Royalties".equals(card.getName())) {
@@ -153,6 +169,9 @@ public class CardAbility {
     public List<String> getPreAgendaCards() {
         return preAgendaCards;
     }
+    public List<String> getPreAccessAssets() {
+        return preAccessAssets;
+    }
 
 // Card specific evaluation functions
     public boolean useMelange(Corp corp) {
@@ -234,6 +253,41 @@ public class CardAbility {
             return true;
         }
         return false;
+    }
+    public static String getStringFromUser() {
+        try {
+            Scanner reader = new Scanner(System.in);
+            String val = reader.nextLine();
+            return val;
+        } catch (Exception e) {
+            System.out.println("Incorrect input");
+        }
+        return "";
+    }
+    public static int getIntFromUser(int min, int max) {
+        int intFromUser = -1;
+        while (intFromUser == -1) {
+            intFromUser = getIntFromUserSafe(min, max);
+        }
+        return intFromUser;
+    }
+    public static int getIntFromUserSafe(int min, int max) {
+        try {
+            Scanner reader = new Scanner(System.in);
+            int val = reader.nextInt();
+            if (max == 0) {
+                return 0;
+            }
+            if (val > max || val < min) {
+                System.out.println("Incorrect input: out of range " + min + " to " + max);
+                return -1;
+            } else {
+                return val;
+            }
+        } catch (Exception e) {
+            System.out.println("Incorrect input: must be integer");
+        }
+        return -1;
     }
 
 }

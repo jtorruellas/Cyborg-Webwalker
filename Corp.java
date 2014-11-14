@@ -187,7 +187,8 @@ public class Corp {
     public boolean installCard(Server server, CorpCard card) {
         debugPrint("debug installCard");
         if (card.isUnique()) {
-            for (Server s : c_servers) {
+            for (int i=3; i<c_servers.size();i++) {
+                Server s = getServerByNumber(i);
                 if (card.isIce()) {
                     for (CorpCard c : s.getIce()) {
                         if (c.getName().equals(card.getName())) {
@@ -696,7 +697,7 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
                 //Play asset
                 if (!assetCorpCards.isEmpty()) {
                     CorpCard bestAsset = getBestAsset(assetCorpCards);
-                    if (openServer != null && bestAsset != null && assetNeedsIce(bestAsset) && installCard(openServer, bestAsset)) {
+                    if (openServer != null && !openServer.reservedForAgenda() && bestAsset != null && assetNeedsIce(bestAsset) && installCard(openServer, bestAsset)) {
                         return true;
                     } else if (assetNeedsIce(bestAsset) && !iceCorpCards.isEmpty() && weakServers.isEmpty()) {
                         CorpCard bestIce = getBestIce(iceCorpCards, null, "Asset");

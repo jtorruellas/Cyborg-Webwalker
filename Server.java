@@ -4,7 +4,9 @@ public class Server {
     private List<CorpCard> ice = new ArrayList<CorpCard>();
     private CorpCard asset = null;
     private List<CorpCard> assets = new ArrayList<CorpCard>();
+    private List<CorpCard> upgrades = new ArrayList<CorpCard>();
     private boolean hasRegion = false;
+    private boolean reservedForAgenda = false;
     private String name = "Remote";
 
     public Server(CorpCard card) {
@@ -30,6 +32,9 @@ public class Server {
     public List<CorpCard> getAssets() {
         return assets;
     }
+    public List<CorpCard> getUpgrades() {
+        return upgrades;
+    }
     public void setAssets(List<CorpCard> cards) {
         assets = new ArrayList<CorpCard>(cards);
     }
@@ -51,6 +56,9 @@ public class Server {
     public boolean isRemote() {
         return "Remote".equals(name);
     }
+    public boolean reservedForAgenda() {
+        return reservedForAgenda;
+    }
     public void removeAsset() {
         asset = null;
     }
@@ -61,6 +69,9 @@ public class Server {
             assets.add(card);
             if (!card.isUpgrade()) {
                 asset = card;
+            } else {
+                upgrades.add(card);
+                reservedForAgenda = card.reservedForAgenda();
             }
         }
     }

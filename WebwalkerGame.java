@@ -220,13 +220,31 @@ public class WebwalkerGame {
     }
 
     public static int accessCardsFromServer(Server server, int runnerPoints) {
+        CardAbility ca = new CardAbility();
+        List<String> preAccessAssets = ca.getPreAccessAssets();
+        List<CorpCard> serverAssets = server.getAssets();
+        for (CorpCard c : serverAssets) {
+            if (preAccessAssets.contains(c.getActualName()) && c.getCost() <= corp.getDisplayCreds()) {
+                
+                if (!c.isRezzed()) {
+                    corp.spendCreds(c.getCost());
+                    c.rez();
+                }
+                ca.activate(c, corp);
+            }
+        }
+        System.out.println("Access successful?");
+        String success = getStringFromUser();
+        if ("no".equals(success)) {
+            return 0;
+        }
+
         System.out.println("How many cards?");
         int numberAccessed = getIntFromUser(0,99);
 
         if (!server.isRnD()) {
             Collections.shuffle(server.getAssets());
         }
-        List<CorpCard> serverAssets = server.getAssets();
         List<CorpCard> cardsToTrash = new ArrayList<CorpCard>();
         List<CorpCard> cardsToSteal = new ArrayList<CorpCard>();
         numberAccessed = (numberAccessed > serverAssets.size()) ? serverAssets.size() : numberAccessed;
@@ -328,7 +346,12 @@ public class WebwalkerGame {
 
         //Render Board
         String serverNumberLayer = "|| ";
-        String layer0 = "|| ";
+        int maxAssetLayer = 0;
+        String[] assetLayers = new String[10];
+        String assetLayer1 = "|| ";
+        String assetLayer2 = "|| ";
+        String assetLayer3 = "|| ";
+        String assetLayer4 = "|| ";
         String layer1 = "|| ";
         String layer2 = "|| ";
         String layer3 = "|| ";
@@ -338,14 +361,54 @@ public class WebwalkerGame {
         for (Server server : corp.getServers()) {
             i++;
             String name = server.getName();
+            /*
             if (server.getAsset() != null) {
                 CorpCard asset = server.getAsset();
                 name = (asset.getAdvancement() > 0) ? "(" + (asset.getAdvancement() + ") " + asset.getName()) : asset.getName();  
-            }
-            List<CorpCard> ice = server.getIce();
+            } else if (server.getAssets != null()) {
 
-            layer0 = layer0 + padToN(name, columnWidth) + " || ";
-            
+            }
+            assetLayer1 = assetLayer1 + padToN(name, columnWidth) + " || ";
+
+*/
+
+            List<CorpCard> ice = server.getIce();
+            List<CorpCard> assets = null;
+
+            if (server.isRemote()) {
+                assets = server.getAssets();
+            } else {
+                assets = server.getUpgrades();
+            }
+
+            if (assets != null && assets.size() > 0) {
+                name = (assets.get(0).getAdvancement() > 0) ? "(" + (assets.get(0).getAdvancement() + ") " + assets.get(0).getName()) : assets.get(0).getName();  
+                assetLayer1 = assetLayer1 + padToN(name, columnWidth) + " || ";
+                maxAssetLayer++;
+            } else {
+                assetLayer1 = assetLayer1 + "             || ";
+            }
+            if (assets != null && assets.size() > 1) {
+                name = (assets.get(1).getAdvancement() > 0) ? "(" + (assets.get(1).getAdvancement() + ") " + assets.get(1).getName()) : assets.get(1).getName();  
+                assetLayer2 = assetLayer2 + padToN(name, columnWidth) + " || ";
+                maxAssetLayer++;
+            } else {
+                assetLayer2 = assetLayer2 + "             || ";
+            }
+            if (assets != null && assets.size() > 2) {
+                name = (assets.get(2).getAdvancement() > 0) ? "(" + (assets.get(2).getAdvancement() + ") " + assets.get(2).getName()) : assets.get(2).getName();  
+                assetLayer3 = assetLayer3 + padToN(name, columnWidth) + " || ";
+                maxAssetLayer++;
+            } else {
+                assetLayer3 = assetLayer3 + "             || ";
+            }
+            if (assets != null && assets.size() > 3) {
+                name = (assets.get(3).getAdvancement() > 0) ? "(" + (assets.get(3).getAdvancement() + ") " + assets.get(3).getName()) : assets.get(3).getName();  
+                assetLayer4 = assetLayer4 + padToN(name, columnWidth) + " || ";
+                maxAssetLayer++;
+            } else {
+                assetLayer4 = assetLayer4 + "             || ";
+            }
             if (ice != null && ice.size() > 0) {
                 layer1 = layer1 + padToN(ice.get(0).getName(), columnWidth) + " || ";
             } else {
@@ -363,11 +426,22 @@ public class WebwalkerGame {
             }
             dividerLayer = dividerLayer + "================";
             spacingLayer = spacingLayer + "             || ";
-            serverNumberLayer = serverNumberLayer + "" + padToN(i + " ", 2) + "           || ";
+            serverNumberLayer = serverNumberLayer + padToN(i + " - " + server.getName(), columnWidth) + " || ";
         }
         System.out.println("\n" + dividerLayer);
+        if (maxAssetLayer == 4) {
+            System.out.println(assetLayer4);
+        }
+        if (maxAssetLayer >= 3) {
+            System.out.println(assetLayer3);
+        }
+        if (maxAssetLayer >= 2) {
+            System.out.println(assetLayer2);
+        }
+        if (maxAssetLayer >= 1) {
+            System.out.println(assetLayer1);
+        }
         System.out.println(serverNumberLayer);
-        System.out.println(layer0);
         System.out.println(dividerLayer);
         System.out.println(layer1);
         System.out.println(layer2);
