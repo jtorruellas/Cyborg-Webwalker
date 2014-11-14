@@ -41,11 +41,15 @@ public class CardAbility {
             if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
                 System.out.println("Corp spends 2 credits");
                 corp.spendCreds(2);
-            } else if (runnerCreds == 0) {
+            } else if (runnerCreds == 0 && corp.getDisplayCreds() >= 1) {
                 System.out.println("Corp spends 1 credit");
                 corp.spendCreds(1);
             } else {
-                System.out.println("Corp spends 0 credits");
+                Random rand = new Random();
+                int creds = (corp.getDisplayCreds() >= 2) ? 2 : corp.getDisplayCreds();
+                int value = rand.nextInt(creds+1); 
+                corp.spendCreds(value);
+                System.out.println("Corp spends "+ value + " credits");
             }
             return true;
         }

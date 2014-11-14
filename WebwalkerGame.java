@@ -224,9 +224,8 @@ public class WebwalkerGame {
         List<String> preAccessAssets = ca.getPreAccessAssets();
         List<CorpCard> serverAssets = server.getAssets();
         for (CorpCard c : serverAssets) {
-            if (preAccessAssets.contains(c.getActualName()) && c.getCost() <= corp.getDisplayCreds()) {
-                
-                if (!c.isRezzed()) {
+            if (preAccessAssets.contains(c.getActualName())) {
+                if (!c.isRezzed() && c.getCost() <= corp.getDisplayCreds()) {
                     corp.spendCreds(c.getCost());
                     c.rez();
                 }
