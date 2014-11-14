@@ -226,6 +226,7 @@ public class Corp {
         debugPrint("debug tryPlayingCurrent");
         for (CorpCard card : hq.getAssets()) {
             if (card.isCurrent() && (current == null || "Runner".equals(current.getSide())) && card.getCost() <= getCreds()) {
+                System.out.println("Corp spends " + card.getCost() + " to play current " + card.getActualName());
                 current = card;
                 hq.getAssets().remove(card);
                 return true;
@@ -684,13 +685,16 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
                             return true;
                         }
                     }
-                    if (openServer != null && !isSuitableForAgenda(openServer) && !iceCorpCards.isEmpty() && weakServers.isEmpty()) {
+                    if (openServer != null && !isSuitableForAgenda(openServer) && !iceCorpCards.isEmpty() && (weakServers.isEmpty() || agendaCorpCards.size() > 2)) {
                         CorpCard bestIce = getBestIce(iceCorpCards, openServer, "Agenda");
                         if (bestIce != null && installCard(openServer, bestIce)) {
                             return true;
                         }
                     }
                     if (openServer != null && isSuitableForAgenda(openServer) && installCard(openServer, bestAgenda)) {
+                        return true;
+                    }
+                    if (openServer != null && agendaCorpCards.size() > 2 && openServer.getIce().size() > 0 && installCard(openServer, bestAgenda)) {
                         return true;
                     } 
                 }
@@ -741,38 +745,39 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
         if (usePreAgendaSpecialCard()) {
             return true;
         }
-
+        debugPrint("1");
         //Score agenda
         if (scoreOrAdvanceAgenda()) {
             return true;
         }
+        debugPrint("2");
         if (advanceTrap()) {
             return true;
         }
-
+        debugPrint("3");
         reactToRunner();
-
+        debugPrint("4");
         if (c_clicks > 2) {
             if (clearVirusCounters()) {
                 return true;
             }
         }
-
+        debugPrint("5");
         if (tryPlayingCurrent()) {
             return true;
         }
-
+        debugPrint("6");
         //Look for special cards
         ///////////////////////////////////////////////////////////////////////////////////////////////////////////
         if (useSpecialCard(playable)) {
             return true;
         }
-
+        debugPrint("7");
         //Play a card
         if (tryPlayingCard(playable)) {
             return true;
         }
-
+        debugPrint("8");
         //Nothing to play
         //Draw a card
          if (hq.getAssets().isEmpty() || (c_creds > 15) || (moneyAsset == null && oddsDrawMoneyCorpCard() && hq.getAssets().size() < c_handLimit)) {
@@ -786,17 +791,20 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
                     return true;
                 }
             }
+        }  
+        debugPrint("9");
         //Use money asset
-        } 
         if (moneyAsset != null) {
             if (moneyAsset.activate()) {
                 return true;
             }
         } 
+        debugPrint("10");
         //Gain a money
         if (gainCred()) {
             return true;
         }
+        debugPrint("11");
         return false; //error
     }
     public void debugPrint(String s) {

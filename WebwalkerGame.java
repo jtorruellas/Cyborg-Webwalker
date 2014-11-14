@@ -223,13 +223,18 @@ public class WebwalkerGame {
         CardAbility ca = new CardAbility();
         List<String> preAccessAssets = ca.getPreAccessAssets();
         List<CorpCard> serverAssets = server.getAssets();
-        for (CorpCard c : serverAssets) {
-            if (preAccessAssets.contains(c.getActualName())) {
-                if (!c.isRezzed() && c.getCost() <= corp.getDisplayCreds()) {
-                    corp.spendCreds(c.getCost());
-                    c.rez();
+        for (int i=serverAssets.size()-1; i<=0; i--) {
+            if(serverAssets.size() > 0 && i >= 0) {
+                CorpCard c = serverAssets.get(i);
+                if (preAccessAssets.contains(c.getActualName())) {
+                    if (!c.isRezzed() && c.getCost() <= corp.getDisplayCreds()) {
+                        corp.spendCreds(c.getCost());
+                        c.rez();
+                    }
+                    ca.activate(c, corp, server);
                 }
-                ca.activate(c, corp);
+            } else {
+                break;
             }
         }
         System.out.println("Access successful?");

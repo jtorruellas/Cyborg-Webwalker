@@ -4,12 +4,15 @@ public class CardAbility {
     private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp");
     private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign");
     private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
-    private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei");
+    private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei","Jackson Howard");
 
     public CardAbility() {
     }
 
     public boolean activate(CorpCard card, Corp corp) {
+        return activate(card, corp, null);
+    }
+    public boolean activate(CorpCard card, Corp corp, Server server) {
 
         if ("Melange Mining Corp".equals(card.getName()) && corp.getClicks() > 2 && useMelange(corp)) {
             System.out.println("Corp activates " + card.getName() + " for two extra  clicks and gains 7 credits");
@@ -75,13 +78,13 @@ public class CardAbility {
         }
         if ("Bioroid Efficiency Research".equals(card.getName())) {
             CorpCard ice = null;
-            for (Server server : corp.getWeakServers()) {
-                if (server.getIce().isEmpty() && !corp.getCorpCardsByType(corp.getHQ().getAssets(), "ICE").isEmpty()) {
+            for (Server s : corp.getWeakServers()) {
+                if (s.getIce().isEmpty() && !corp.getCorpCardsByType(corp.getHQ().getAssets(), "ICE").isEmpty()) {
                     return false;
                 }
             }
-            for (Server server : corp.getServers()) {
-                List<CorpCard> iceList = server.getIce();
+            for (Server s : corp.getServers()) {
+                List<CorpCard> iceList = s.getIce();
                 for  (CorpCard c : iceList) {
                     if (ice == null || (ice.getCost() < c.getCost() && !c.isRezzed())) {
                         ice = c;
@@ -105,15 +108,48 @@ public class CardAbility {
             return true;
         }
         if ("Jackson Howard".equals(card.getName())) {
-            System.out.println("Corp activates " + card.getName() + " to draw two cards");
-            corp.drawCorpCards(1);
-            corp.drawCorpCards(1);
-            return true;
+            if (corp.getClicks() == 0) {                
+                List<CorpCard> agendas = new ArrayList<CorpCard>();
+                List<CorpCard> secondary = new ArrayList<CorpCard>();
+                for (CorpCard c : corp.getServerByNumber(0).getAssets()) {
+                    if (c.isAgenda()) {
+                        agendas.add(c);
+                    } else if (c.isMoneyAsset() || c.isMoneyCard() || c.isCardAsset()) {
+                        secondary.add(c);
+                    }
+                }
+                if (agendas.size() > 0 || (agendas.size() + secondary.size()) > 2) {
+                    System.out.println("Corp removes " + card.getName() + " from the game to put three cards from Archives to RnD");
+                    for (int i=0; i<3; i++) {
+                        if (agendas.size() > 0) {
+                            CorpCard c = agendas.get(0);
+                            corp.debugPrint("Moving " + c.getActualName() + " to RnD");
+                            corp.getServerByNumber(1).getAssets().add(c);
+                            corp.getServerByNumber(0).getAssets().remove(c);
+                            agendas.remove(c);
+                        } else if (secondary.size() > 0) {
+                            CorpCard c = secondary.get(0);
+                            corp.debugPrint("Moving " + c.getActualName() + " to RnD");
+                            corp.getServerByNumber(1).getAssets().add(c);
+                            corp.getServerByNumber(0).getAssets().remove(c);
+                            secondary.remove(c);
+                        }
+                    }
+                    Collections.shuffle(corp.getServerByNumber(1).getAssets());
+                    server.removeAsset();
+                    server.getAssets().remove(card);
+                }
+            } else {
+                System.out.println("Corp activates " + card.getName() + " to draw two cards");
+                corp.drawCorpCards(1);
+                corp.drawCorpCards(1);
+                return true;
+            }
         }
         if ("Priority Requisition".equals(card.getName())) {
             CorpCard ice = null;
-            for (Server server : corp.getServers()) {
-                List<CorpCard> iceList = server.getIce();
+            for (Server s : corp.getServers()) {
+                List<CorpCard> iceList = s.getIce();
                 for  (CorpCard c : iceList) {
                     if (ice == null || (ice.getCost() < c.getCost() && !c.isRezzed())) {
                         ice = c;
@@ -136,18 +172,18 @@ public class CardAbility {
                     System.out.println("Corp trashes card " + (i+1));
                     corp.trashCard(topCard);
                 } else {
-                    Server server = null;
+                    Server s = null;
                     topCard.rez();
                     if (!corp.getWeakServers().isEmpty()) {
-                        server = corp.getWeakServers().get(0);
+                        s = corp.getWeakServers().get(0);
                     } else if (corp.getServerByNumber(0).getIce().size() == 0) {
-                        server = corp.getServerByNumber(0);
+                        s = corp.getServerByNumber(0);
                     } else {
-                        server = (corp.getServerByNumber(1).getIce().size() < corp.getServerByNumber(2).getIce().size()) ? corp.getServerByNumber(1) : corp.getServerByNumber(2);
+                        s = (corp.getServerByNumber(1).getIce().size() < corp.getServerByNumber(2).getIce().size()) ? corp.getServerByNumber(1) : corp.getServerByNumber(2);
                     }
-                    if (server != null) {
-                        server.addCard(topCard);
-                        System.out.println("Corp installs and rezzes " + topCard.getActualName() + " on " + server.getName());
+                    if (s != null) {
+                        s.addCard(topCard);
+                        System.out.println("Corp installs and rezzes " + topCard.getActualName() + " on " + s.getName());
                     }
                 }
             }
@@ -187,8 +223,8 @@ public class CardAbility {
         int advancementNeeded = 99;
         int trapAdvancement = 0;
         boolean agendaInstalled = false;
-        for (Server server : corp.getServers()) {
-            CorpCard asset = server.getAsset();
+        for (Server s : corp.getServers()) {
+            CorpCard asset = s.getAsset();
             if (asset != null && asset.isTrap() && asset.getAdvancement() > trapAdvancement) {
                 trap = asset;
                 trapAdvancement = trap.getAdvancement();

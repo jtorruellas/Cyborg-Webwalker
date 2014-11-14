@@ -53,7 +53,10 @@ public class CorpCard extends Card {
         return "Operation".equals(type);
     }
     public boolean isMoneyAsset() {
-        return "Money Asset".equals(subType);
+        return ("Money Asset".equals(subType));
+    }
+    public boolean isMoneyCard() {
+        return ("Money Card".equals(subType));
     }
     public boolean isCardAsset() {
         return "Card Asset".equals(subType);
