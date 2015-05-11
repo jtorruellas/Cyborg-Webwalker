@@ -58,6 +58,18 @@ public class WebwalkerGame {
             runnerClicks = 3;
             renderCorpBoard(corp);
             while (runnerClicks > 0) {
+                for (Server s : corp.getServers()) {
+                    if (s.isRemote()) {
+                        for (CorpCard asset : s.getAssets()) {
+                            if ("Sundew".equals(asset.getActualName())) {
+                                if (!asset.isRezzed() && !(asset.getCost() > corp.getDisplayCreds())) { 
+                                    asset.rez();
+                                }
+                                CardAbility.getInstance().activate(asset, corp, s);
+                            }
+                        }
+                    }
+                }
                 System.out.print("run>");
                 String command = getStringFromUser();
                 if ("rez ice".equals(command)) {
@@ -151,10 +163,22 @@ public class WebwalkerGame {
                     corp.setCurrent(card);
                     System.out.println("Runner plays current " + cardName);
                     renderCorpBoard(corp);
+                } else if ("host program".equals(command)) {
+                    System.out.println("What program?");
+                    String cardName = getStringFromUser();
+                    System.out.println("On which ICE?");
+                    CorpCard ice = getIceCard(corp, false);
+                    ice.setHostedCard(cardName);
+                    renderCorpBoard(corp);
+                } else if ("unhost program".equals(command)) {
+                    System.out.println("From which ICE?");
+                    CorpCard ice = getIceCard(corp, false);
+                    ice.setHostedCard("");
+                    renderCorpBoard(corp);
                 } else if ("help".equals(command)) {
                     System.out.println("\n****** Help Menu ******");
                     System.out.println("Servers are numbered left to right, starting with 1.");
-                    System.out.println("ICE is numberes from top to bottom, starting with 1.");
+                    System.out.println("ICE is numbered from top to bottom, starting with 1.");
                     System.out.println("Valid commands:");
                     System.out.println("rez ice");
                     System.out.println("derez ice");
@@ -168,6 +192,8 @@ public class WebwalkerGame {
                     System.out.println("trash program");
                     System.out.println("add virus");
                     System.out.println("play current");
+                    System.out.println("host program");
+                    System.out.println("unhost program");
                     System.out.println("end turn\n");
                 } else if ("^C".equals(command)) {
                     System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for list of valid commands.");
@@ -220,8 +246,7 @@ public class WebwalkerGame {
     }
 
     public static int accessCardsFromServer(Server server, int runnerPoints) {
-        CardAbility ca = new CardAbility();
-        List<String> preAccessAssets = ca.getPreAccessAssets();
+        List<String> preAccessAssets = CardAbility.getInstance().getPreAccessAssets();
         List<CorpCard> serverAssets = server.getAssets();
         for (int i=serverAssets.size()-1; i<=0; i--) {
             if(serverAssets.size() > 0 && i >= 0) {
@@ -231,7 +256,7 @@ public class WebwalkerGame {
                         corp.spendCreds(c.getCost());
                         c.rez();
                     }
-                    ca.activate(c, corp, server);
+                    CardAbility.getInstance().activate(c, corp, server);
                 }
             } else {
                 break;
@@ -333,10 +358,7 @@ public class WebwalkerGame {
             CorpCard ice = server.getIce().get(iceNumber-1);
             if (trash) {
                 System.out.println("Corp forced to trash " + ice.getName());
-                if (!ice.isRezzed()) {
-                    corp.refundCreds(ice.getCost());
-                }
-                server.getIce().remove(ice);
+                corp.trashIceFromServer(ice, server);
             } else {
                 return ice;
             }
@@ -471,6 +493,12 @@ public class WebwalkerGame {
         if (current != null) {
             String currentText = "|| Current: " + current.getName() + " (" + current.getSide() + ")";
             System.out.println(padToN(currentText, dividerLayer.length() - 2) + "||"); 
+        }
+        String identityText = "|| Identity: " + corp.getName();
+        System.out.println(padToN(identityText, dividerLayer.length() - 2) + "||"); 
+        if (corp.getName().contains("Replicating Perfection")) {
+            identityText = "|| Reminder - RP requires run on a central server before a remote. ";
+            System.out.println(padToN(identityText, dividerLayer.length() - 2) + "||"); 
         }
         System.out.println(dividerLayer);
         System.out.println("\n");

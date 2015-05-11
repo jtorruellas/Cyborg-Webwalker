@@ -26,9 +26,11 @@ public class Card {
     public String getSide() {
         return side;
     }
+    /*
     public boolean activate(){
         return true;
     }
+    */
     public String getType() {
         return type;
     }
@@ -38,6 +40,9 @@ public class Card {
     public boolean isCurrent(){
         return subType.equals("Current");
     }
+    public boolean stacks(){
+        return hasAttribute("Stack");
+    }
     public void setType(String type) {
         this.type = type;
     }
@@ -46,6 +51,9 @@ public class Card {
     }
     public String getSubType() {
         return subType;
+    }
+    public String getAttributes() {
+        return attributes;
     }
     public void setAttributes(String attributes) {
         this.attributes = attributes;

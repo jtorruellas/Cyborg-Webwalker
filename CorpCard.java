@@ -11,6 +11,7 @@ public class CorpCard extends Card {
     private boolean rezzed = false;
     public int adonisCreds = 12;
     public int trapCounter = 0;
+    public String hostedCard = "";
 
     public CorpCard() {
         super.setName(new String());
@@ -47,7 +48,7 @@ public class CorpCard extends Card {
         }
     }
     public boolean isUpgrade() {
-        return "Upgrade".equals(subType);
+        return "Upgrade".equals(subType) || "Region".equals(subType);
     }
     public boolean isOperation() {
         return "Operation".equals(type);
@@ -118,10 +119,16 @@ public class CorpCard extends Card {
         }
     }
     public String getActualName() {
-            return name;
+        return name;
     }
     public int getTrashCost() {
-            return trashCost;
+        return trashCost;
+    }
+    public String getHostedCard() {
+        return hostedCard;
+    }
+    public void setHostedCard(String cardName) {
+        this.hostedCard = cardName;
     }
     public void rez() {
         rezzed = true;

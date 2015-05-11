@@ -1,18 +1,38 @@
 import java.util.*;
 
 public class CardAbility {
-    private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp");
+    private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp","Eliza's Toybox");
     private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign");
     private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
     private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei","Jackson Howard");
+    private static List<String> hostedCardsToTrash = Arrays.asList("Rook","Knight","Bishop");
+    private static CardAbility instance = null;
+    private boolean debugMode = false;
 
     public CardAbility() {
     }
 
-    public boolean activate(CorpCard card, Corp corp) {
-        return activate(card, corp, null);
+    public static CardAbility getInstance() {
+        if (instance == null) {
+            instance = new CardAbility();
+        }
+        return instance;
     }
+
+    public boolean activate(CorpCard card, Corp corp) {
+        return activate(card, corp, null, null);
+    }
+
     public boolean activate(CorpCard card, Corp corp, Server server) {
+        return activate(card, corp, server, null);
+    }
+
+    public boolean activate(CorpCard card, Corp corp, String location) {
+        return activate(card, corp, null, location);
+    }
+
+    public boolean activate(CorpCard card, Corp corp, Server server, String location) {
+        debugMode = corp.debugMode;
 
         if ("Melange Mining Corp".equals(card.getName()) && corp.getClicks() > 2 && useMelange(corp)) {
             System.out.println("Corp activates " + card.getName() + " for two extra  clicks and gains 7 credits");
@@ -20,6 +40,26 @@ public class CardAbility {
             corp.removeClick();
             corp.removeClick();
             return true;
+        }
+        if ("Eliza's Toybox".equals(card.getName()) && corp.getClicks() > 2) {
+            int minCost = 6;
+            debugPrint("22");
+            if (location != null && "Money Asset".equals(location)) {
+                debugPrint("33");
+                minCost = 3;
+            }
+            CorpCard ice = useToybox(corp, minCost);
+            if (ice != null) {
+                corp.removeClick();
+                corp.removeClick();
+                corp.refundCreds(ice.getCost());
+                ice.rez();
+                System.out.println("Corp activates " + card.getName() + " for two extra  clicks and rezzes " + ice.getActualName() + " at no cost");
+                
+                return true;
+            } else {
+                return false;
+            }
         }
         if ("Adonis Campaign".equals(card.getName())) {
             if (card.adonisCreds > 0) {
@@ -41,6 +81,8 @@ public class CardAbility {
             System.out.println(card.getName() + " triggers: let's play a game");
             System.out.println("How many credits are you playing with? (0, 1, or 2)");
             int runnerCreds = getIntFromUser(0,2);
+            System.out.println("How many credits did you spend?");
+            int runnerSpent = getIntFromUser(0,2);
             if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
                 System.out.println("Corp spends 2 credits");
                 corp.spendCreds(2);
@@ -53,7 +95,13 @@ public class CardAbility {
                 int value = rand.nextInt(creds+1); 
                 corp.spendCreds(value);
                 System.out.println("Corp spends "+ value + " credits");
+                if (runnerSpent != value) {
+                    System.out.println("Caprice wins and prevents server access");
+                } else {
+                    System.out.println("Caprice loses and server is accessable");
+                }
             }
+            
             return true;
         }
         if ("Beanstalk Royalties".equals(card.getName())) {
@@ -119,15 +167,17 @@ public class CardAbility {
                     }
                 }
                 if (agendas.size() > 0 || (agendas.size() + secondary.size()) > 2) {
-                    System.out.println("Corp removes " + card.getName() + " from the game to put three cards from Archives to RnD");
+                    int j = 0;
                     for (int i=0; i<3; i++) {
                         if (agendas.size() > 0) {
+                            j++;
                             CorpCard c = agendas.get(0);
                             corp.debugPrint("Moving " + c.getActualName() + " to RnD");
                             corp.getServerByNumber(1).getAssets().add(c);
                             corp.getServerByNumber(0).getAssets().remove(c);
                             agendas.remove(c);
                         } else if (secondary.size() > 0) {
+                            j++;
                             CorpCard c = secondary.get(0);
                             corp.debugPrint("Moving " + c.getActualName() + " to RnD");
                             corp.getServerByNumber(1).getAssets().add(c);
@@ -135,6 +185,7 @@ public class CardAbility {
                             secondary.remove(c);
                         }
                     }
+                    System.out.println("Corp removes " + card.getName() + " from the game to put  " + j + " cards from Archives to RnD");
                     Collections.shuffle(corp.getServerByNumber(1).getAssets());
                     server.removeAsset();
                     server.getAssets().remove(card);
@@ -194,6 +245,10 @@ public class CardAbility {
                 return true;
             }
         }
+        if ("Sundew".equals(card.getName())) {   
+            corp.gainCreds(2);
+            System.out.println("Sundew triggers and the corp gains 2 credits.");
+        }
         return false;
     }
 
@@ -212,10 +267,41 @@ public class CardAbility {
     public List<String> getPreAccessAssets() {
         return preAccessAssets;
     }
+    public List<String> getHostedCardsToTrash() {
+        return hostedCardsToTrash;
+    }
 
 // Card specific evaluation functions
     public boolean useMelange(Corp corp) {
         return (corp.getCreds() < 15);
+    }
+    public CorpCard useToybox(Corp corp, int minCost) {
+        CorpCard bestIce = null;
+        for (Server server : corp.getWeakServers()) {
+            for (CorpCard ice : server.getIce()) {
+                if ((bestIce == null || ice.getCost() > bestIce.getCost()) && !ice.isRezzed()) {
+                    bestIce = ice;
+                }
+            }
+        }
+        if (bestIce != null && (bestIce.getCost() > corp.getDisplayCreds() || bestIce.getCost() > 4)) {
+            return bestIce;
+        } else if (bestIce == null) {
+            for (Server server : corp.getServers()) {
+                for (CorpCard ice : server.getIce()) {
+                    if ((bestIce == null || ice.getCost() > bestIce.getCost()) && !ice.isRezzed()) {
+                        bestIce = ice;
+                    }
+                }
+            }
+            if (bestIce != null && bestIce.getCost() > minCost) {
+                return bestIce;
+            } else {
+                return null;
+            }
+        } else {
+            return null;
+        }
     }
     public boolean useTrickOfLight(Corp corp) {
         CorpCard trap = null;
@@ -329,5 +415,9 @@ public class CardAbility {
         }
         return -1;
     }
-
+    public void debugPrint(String s) {
+        if (debugMode) {
+            System.out.println(s);
+        }
+    }
 }

@@ -19,9 +19,9 @@ public class Corp {
     private int DRAW_MONEY_CARD_PROB = 45;
     private List<Server> c_servers = new ArrayList<Server>();
     private List<Server> serversAccessed = new ArrayList<Server>();
-    private String corpName = "HB1";
+    private String corpName = "";
     private boolean usedAbility = false;
-    private boolean debugMode = false;
+    public boolean debugMode = false;
     private Card current = null;
 
     // ===========================================================Initialize Corp
@@ -100,6 +100,9 @@ public class Corp {
     public Card getCurrent() {
         return current;
     }
+    public String getName() {
+        return corpName;
+    }
     // ===========================================================Base Actions 
     public void preTurn() {
         debugPrint("debug preTurn");
@@ -108,20 +111,49 @@ public class Corp {
         //activate pre-turn assets
         for(Server server : c_servers) {
             CorpCard asset = server.getAsset();
-            CardAbility ca = new CardAbility();
-            List<String> preTurnAssets = ca.getPreTurnAssets();
-            if (asset != null && !asset.isAgenda() && !asset.isTrap()) {
+            List<String> preTurnAssets = CardAbility.getInstance().getPreTurnAssets();
+            if (asset != null && !asset.isAgenda() && !asset.isTrap() && !asset.isUpgrade()) {
                 if (!asset.isRezzed() && !(asset.getCost() > getDisplayCreds())) {
+    /*
+                    if (card.stacks()) {
+                        for (int i=3; i<c_servers.size();i++) {
+                            Server s = getServerByNumber(i);
+                            if (card.isIce()) {
+                                for (CorpCard c : s.getIce()) {
+                                    if (c.getName().equals(card.getName())) {
+                                        return false;
+                                    }
+                                }
+                            } else if (card.isAsset()) {
+                                for (CorpCard c : s.getAssets()) {
+                                    if (c.getName().equals(card.getName())) {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    */
                     spendReservedCreds(asset.getCost());
                     asset.rez();
                     System.out.println("Corp rezzes " + asset.getName() + " for " + asset.getCost() + " creds");
                 }
                 
                 if (preTurnAssets.contains(asset.getActualName())) {
-                    if (!ca.activate(asset, this)) {
+                    if (!CardAbility.getInstance().activate(asset, this)) {
                         trashCardFromServer(asset, server);
                     }
                 }
+            }
+            List<CorpCard> iceToTrash = new ArrayList<CorpCard>();
+            for (CorpCard ice : server.getIce()) {
+                if (!ice.isRezzed() && CardAbility.getInstance().getHostedCardsToTrash().contains(ice.getHostedCard())) {
+                    iceToTrash.add(ice);
+                }
+            }
+            for (CorpCard ice : iceToTrash) {
+                System.out.println("Corp trashes ICE from " + server.getName());
+                trashIceFromServer(ice, server);
             }
         }
     }
@@ -205,7 +237,7 @@ public class Corp {
             }
         }
         if (card.isIce()) {
-            if (server.getIce().size() != 0 && server.getIce().size() > c_creds) {
+            if (server.getIce().size() != 0 && server.getIce().size() > c_displayCreds) {
                 return false;
             } else {
                 spendCreds(server.getIce().size()) ;
@@ -226,6 +258,7 @@ public class Corp {
         debugPrint("debug tryPlayingCurrent");
         for (CorpCard card : hq.getAssets()) {
             if (card.isCurrent() && (current == null || "Runner".equals(current.getSide())) && card.getCost() <= getCreds()) {
+                spendCreds(card.getCost());
                 System.out.println("Corp spends " + card.getCost() + " to play current " + card.getActualName());
                 current = card;
                 hq.getAssets().remove(card);
@@ -235,8 +268,7 @@ public class Corp {
         return false;
     }
     public boolean playOperation(CorpCard card) {
-        CardAbility ca = new CardAbility();
-        if (ca.activate(card, this)) {
+        if (CardAbility.getInstance().activate(card, this)) {
             spendCreds(card.getCost());
             hq.getAssets().remove(card);
             trashCard(card);
@@ -291,6 +323,15 @@ public class Corp {
         server.removeAsset();
         trashCard(card);
     }
+    public void trashIceFromServer(CorpCard ice, Server server) {
+        debugPrint("debug trashIceFromServer");
+        if (!ice.isRezzed()) {
+            refundCreds(ice.getCost());
+        }
+        server.getIce().remove(ice);
+    }
+
+
     public void stealCardFromServer(CorpCard card, Server server) {
         debugPrint("debug stealCardFromServer");
         server.getAssets().remove(card);
@@ -311,34 +352,33 @@ public class Corp {
     }
     public boolean useSpecialCard(List<CorpCard> playable) {
         debugPrint("debug useSpecialCard");
-        CardAbility ca = new CardAbility();
-        List<String> cardsForClickNumber = ca.getCardsForClickNumber(c_clicks);
+        List<String> cardsForClickNumber = CardAbility.getInstance().getCardsForClickNumber(c_clicks);
         if (cardsForClickNumber == null) {
             return false;
         }
         for (Server server : c_servers) {
             CorpCard card = server.getAsset();
             if (card != null && cardsForClickNumber.contains(card.getName())) {
-                return ca.activate(card, this);
+                debugPrint("debug trying to use " + card.getName());
+                return CardAbility.getInstance().activate(card, this);
             }
         }
         for (CorpCard card : playable) {
             if (card.isOperation() && cardsForClickNumber.contains(card.getName())) {
-                return ca.activate(card, this);
+                return CardAbility.getInstance().activate(card, this);
             }
         }
         return false;
     }
     public boolean usePreAgendaSpecialCard() {
         debugPrint("debug usePreAgendaSpecialCard");
-        CardAbility ca = new CardAbility();
-        List<String> preAgendaCards = ca.getPreAgendaCards();
+        List<String> preAgendaCards = CardAbility.getInstance().getPreAgendaCards();
         if (preAgendaCards == null) {
             return false;
         }
         for (CorpCard card : hq.getAssets()) {
             if (card.isOperation() && preAgendaCards.contains(card.getActualName()) && card.getCost() <= getDisplayCreds()) {
-                if (ca.activate(card, this)) {
+                if (CardAbility.getInstance().activate(card, this)) {
                     spendCreds(card.getCost());
                     return true;
                 }
@@ -427,8 +467,7 @@ public class Corp {
                         server.getAssets().remove(asset);
                         server.removeAsset();
                         c_agendas.add(asset);
-                        CardAbility ca = new CardAbility();
-                        ca.activate(asset, this);
+                        CardAbility.getInstance().activate(asset, this);
                         return true;
                     } else {
                         return advanceCorpCard(asset, 1);
@@ -501,7 +540,17 @@ public class Corp {
                 weakServers.add(server);
             }
         }
-        weakServers.addAll(serversAccessed);
+        for (Server server : serversAccessed) {
+            boolean hasUnrezzed = false;
+            for (CorpCard ice : server.getIce()) {
+                if (!ice.isRezzed()) {
+                    hasUnrezzed = true;
+                }
+            }
+            if (!hasUnrezzed && server.getIce().size() < 4) {
+                weakServers.add(server);
+            }
+        }
         return weakServers;
     }
     public List<CorpCard> getCorpCardsByType(List<CorpCard> playable, String type) {
@@ -532,7 +581,9 @@ public class Corp {
             int cost = card.getCost();
             if (card.isIce()){
                 cardList.add(card);
-            } else if (cost <= c_creds && c_clicks > 0) {
+            } else if (cost <= c_displayCreds && (card.isMoneyAsset() || card.isMoneyCard())) {
+                cardList.add(card);
+            }else if (cost <= c_creds && c_clicks > 0) {
                 cardList.add(card);
             }
         }
@@ -583,22 +634,24 @@ public class Corp {
         debugPrint("debug getBestIce");
         //takes into account if it can be rezzed
         String iceTypes = "";
+        String iceAttributes = "";
         if (server != null) {
             List<CorpCard> ice = server.getIce();
             if (ice != null) {
                 for (CorpCard card : ice) {
                     iceTypes = iceTypes + card.getSubType() + ",";
+                    iceAttributes = iceAttributes + card.getAttributes() + "|";
                 }
             }
         }
         if (playableIce != null) {
             CorpCard[] topThree = new CorpCard[4];
             for (CorpCard card : playableIce) {
-                if ("Agenda".equals(targetServer) && card.hasAttribute("Agenda")) {
+                if ("Agenda".equals(targetServer) && card.hasAttribute("Agenda") && !iceAttributes.contains("Agenda")) {
                     topThree[0] = card;
-                } else if ("RnD".equals(targetServer) && card.hasAttribute("RnD")) {
+                } else if ("RnD".equals(targetServer) && card.hasAttribute("RnD" ) && !iceAttributes.contains("RnD")) {
                     topThree[0] = card;
-                } else if ("HQ".equals(targetServer) && card.hasAttribute("HQ")) {
+                } else if ("HQ".equals(targetServer) && card.hasAttribute("HQ") && !iceAttributes.contains("HQ")) {
                     topThree[0] = card;
                 }
                 if (!"".equals(iceTypes) && !iceTypes.contains(card.getSubType())) {
@@ -786,18 +839,15 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
                     return true;
                 }
             } else {
-                CardAbility ca = new CardAbility();
-                if (ca.activate(cardAsset, this)) {
+                if (CardAbility.getInstance().activate(cardAsset, this)) {
                     return true;
                 }
             }
         }  
         debugPrint("9");
         //Use money asset
-        if (moneyAsset != null) {
-            if (moneyAsset.activate()) {
-                return true;
-            }
+        if (moneyAsset != null && CardAbility.getInstance().activate(moneyAsset, this, "Money Asset")) {
+            return true;
         } 
         debugPrint("10");
         //Gain a money
