@@ -240,6 +240,11 @@ public class CardAbility {
             }
             return true;
         }
+        if ("Nisei MK II".equals(card.getName())) {
+            System.out.println("Nisei MK II gets three agenda counters");
+            card.setCounters(3);
+            return true;
+        }
         if ("Trick of Light".equals(card.getName())) {
             if (useTrickOfLight(corp)) {
                 return true;

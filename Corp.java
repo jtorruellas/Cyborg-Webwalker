@@ -47,6 +47,9 @@ public class Corp {
     }
 
     // ===========================================================Getter/Setters
+    public void removeAgenda(CorpCard card) {
+        c_agendas.remove(card);
+    }
     public RunnerCard getRunnerCardByName(String cardName) {
         return runnerCards.get(cardName);
     }
@@ -55,6 +58,9 @@ public class Corp {
     }
     public List<Server> getServersAccessed() {
         return serversAccessed;
+    }
+    public List<CorpCard> getScoredAgendas() {
+        return c_agendas;
     }
     public void setServersAccessed(List<Server> serversAccessed) {
         this.serversAccessed = serversAccessed;

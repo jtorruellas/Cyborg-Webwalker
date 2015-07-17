@@ -103,7 +103,16 @@ public class WebwalkerGame {
                 } else if ("access server".equals(command)) {
                     System.out.println("Which server?");
                     int serverNumber = getIntFromUser(1, corp.getServers().size());
-                    runnerPoints = accessCardsFromServer(corp.getServerByNumber(serverNumber - 1), runnerPoints);
+                    CorpCard nisei = getCardByName(corp.getScoredAgendas(), "Nisei MK II");
+                    if (nisei != null && nisei.getCounters() > 0) {
+                        System.out.println("Corp ends run using Nisei agenda counter");
+                        nisei.setCounters(nisei.getCounters() - 1);
+                        if (nisei.getCounters() == 0) {
+                            corp.removeAgenda(nisei);
+                        }
+                    } else {
+                        runnerPoints = accessCardsFromServer(corp.getServerByNumber(serverNumber - 1), runnerPoints);
+                    }
                     boolean serverRemoved = corp.cleanupServer(serverNumber - 1);
                     String isSneakdoor = null;
                     if (serverNumber == 3 && corp.getRunnerCardByName("Sneakdoor Beta") != null) {
@@ -564,6 +573,15 @@ public class WebwalkerGame {
         if (debugMode) {
             System.out.println(s);
         }
+    }
+
+    public static CorpCard getCardByName(List<CorpCard> cardList, String s) {
+        for (CorpCard c : cardList) {
+            if (s.equals(c.getActualName())) {
+                return c;
+            }
+        }
+        return null;
     }
 
 }

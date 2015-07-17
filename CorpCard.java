@@ -12,6 +12,7 @@ public class CorpCard extends Card {
     public int adonisCreds = 12;
     public int trapCounter = 0;
     public String hostedCard = "";
+    private int counters = 0;
 
     public CorpCard() {
         super.setName(new String());
@@ -102,10 +103,13 @@ public class CorpCard extends Card {
         scoreValue = value;
     }
     public void setSubroutines(int value) {
-        scoreValue = value;
+        subroutines = value;
     }
     public void setStrength(int value) {
-        scoreValue = value;
+        strength = value;
+    }
+    public void setCounters(int value) {
+        counters = value;
     }
     public String getName() {
         if (rezzed || ("Operation").equals(type)) {
@@ -135,5 +139,8 @@ public class CorpCard extends Card {
     }
     public void derez() {
         rezzed = false;
+    }
+    public int getCounters() {
+        return counters;
     }
 }
