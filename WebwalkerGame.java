@@ -57,19 +57,20 @@ public class WebwalkerGame {
             
             runnerClicks = 3;
             renderCorpBoard(corp);
-            while (runnerClicks > 0) {
-                for (Server s : corp.getServers()) {
-                    if (s.isRemote()) {
-                        for (CorpCard asset : s.getAssets()) {
-                            if ("Sundew".equals(asset.getActualName())) {
-                                if (!asset.isRezzed() && !(asset.getCost() > corp.getDisplayCreds())) { 
-                                    asset.rez();
-                                }
-                                CardAbility.getInstance().activate(asset, corp, s);
+
+            for (Server s : corp.getServers()) {
+                if (s.isRemote()) {
+                    for (CorpCard asset : s.getAssets()) {
+                        if ("Sundew".equals(asset.getActualName())) {
+                            if (!asset.isRezzed() && !(asset.getCost() > corp.getDisplayCreds())) { 
+                                asset.rez();
                             }
+                            CardAbility.getInstance().activate(asset, corp, s);
                         }
                     }
                 }
+            }
+            while (runnerClicks > 0) {
                 System.out.print("run>");
                 String command = getStringFromUser();
                 if ("rez ice".equals(command)) {
@@ -105,7 +106,7 @@ public class WebwalkerGame {
                     int serverNumber = getIntFromUser(1, corp.getServers().size());
                     CorpCard nisei = getCardByName(corp.getScoredAgendas(), "Nisei MK II");
                     Server server = corp.getServerByNumber(serverNumber - 1);
-                    if (nisei != null && nisei.getCounters() > 0 && server.getAsset().isAgenda()) {
+                    if (nisei != null && nisei.getCounters() > 0 && CardAbility.getInstance().useNisei(corp, server)) {
                         System.out.println("Corp ends run using Nisei agenda counter");
                         nisei.setCounters(nisei.getCounters() - 1);
                         if (nisei.getCounters() == 0) {
@@ -274,7 +275,7 @@ public class WebwalkerGame {
         }
         System.out.println("Access successful?");
         String success = getStringFromUser();
-        if ("no".equals(success)) {
+        if ("no".equals(success) || "n".equals(success)) {
             return 0;
         }
 

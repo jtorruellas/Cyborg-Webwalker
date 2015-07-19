@@ -59,6 +59,9 @@ public class Server {
     public boolean reservedForAgenda() {
         return reservedForAgenda;
     }
+    public void reserveForAgenda() {
+        reservedForAgenda = true;
+    }
     public void removeAsset() {
         asset = null;
     }

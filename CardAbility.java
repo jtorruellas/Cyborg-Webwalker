@@ -8,6 +8,7 @@ public class CardAbility {
     private static List<String> hostedCardsToTrash = Arrays.asList("Rook","Knight","Bishop");
     private static List<String> conditionalAgendas = Arrays.asList("NAPD Contract");
     private static List<String> agendaConditionCards = Arrays.asList("Strongbox");
+    private static List<String> doubleOperations = Arrays.asList("Celebrity Gift");
     private static CardAbility instance = null;
     private boolean debugMode = false;
 
@@ -157,7 +158,7 @@ public class CardAbility {
         }
         if ("NAPD Contract".equals(card.getActualName())) {
             if (accessFromRunner) {
-                System.out.println("Runner must pay an additional 4 credits to steal " + card.getName());
+                System.out.println("Runner must pay an additional 4 credits to steal " + card.getActualName());
                 System.out.println("Did runner pay credits?");
                 String paidCreds = getStringFromUser();
                 return paidCreds != null && ("yes".equals(paidCreds) || "y".equals(paidCreds));
@@ -330,6 +331,10 @@ public class CardAbility {
     public boolean useMelange(Corp corp) {
         return (corp.getCreds() < 15);
     }
+    public boolean useNisei(Corp corp, Server server) {
+        return ((server.isHQ() || server.isArchives()) && corp.getCorpCardsByType(server.getAssets(), "Agenda").size() > 1) || (server.isRemote() && server.getAsset() != null && server.getAsset().isAgenda());
+    }
+    
     public CorpCard useToybox(Corp corp, int minCost) {
         CorpCard bestIce = null;
         for (Server server : corp.getWeakServers()) {
@@ -434,6 +439,10 @@ public class CardAbility {
             return true;
         }
         return false;
+    }
+
+    public boolean isDouble(CorpCard card) {
+        return doubleOperations.contains(card.getActualName());
     }
 
     public boolean meetsAdditionalAgendaConditions(Corp corp, Server server) {

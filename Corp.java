@@ -274,6 +274,9 @@ public class Corp {
         return false;
     }
     public boolean playOperation(CorpCard card) {
+        if (CardAbility.getInstance().isDouble(card) && getWeakServers().size() >= c_clicks - 1) {
+            return false;
+        }
         if (CardAbility.getInstance().activate(card, this)) {
             spendCreds(card.getCost());
             hq.getAssets().remove(card);
@@ -425,7 +428,7 @@ public class Corp {
         archives.getAssets().add(card);
     }
     public boolean mulligan() {
-        return (getCorpCardsByType(getHQ().getAssets(), "ICE").size() < 2);
+        return (getCorpCardsByType(getHQ().getAssets(), "ICE").size() < 2 || getCorpCardsByType(getHQ().getAssets(), "Agenda").size() > 2);
     }
     public void shuffleHand() {
         debugPrint("debug shuffleHand");
@@ -465,7 +468,7 @@ public class Corp {
             CorpCard asset = server.getAsset();
             if (asset != null && asset.isAgenda()) {
                 int advancementNeeded = asset.getCost() - asset.getAdvancement();
-                if (advancementNeeded <= c_clicks && advancementNeeded <= c_creds) {
+                if (advancementNeeded <= c_clicks && advancementNeeded <= c_displayCreds) {
                     if (advancementNeeded == 1 && advanceCorpCard(asset, 1)) {
                         asset.rez();
                         System.out.println("Corp scores " + asset.getName() + " for " + asset.getScoreValue() + " points");
@@ -741,12 +744,19 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
                     if (openServer == null && !iceCorpCards.isEmpty() && weakServers.isEmpty()) {
                         CorpCard bestIce = getBestIce(iceCorpCards, null, "Agenda");
                         if (bestIce != null && createServer(bestIce)) {
-                            return true;
+                            openServer = getBestOpenServer();
+                            if (openServer != null) {
+                                openServer.reserveForAgenda();
+                                return true;
+                            } else {
+                                System.out.println("ERROR - just created server, should be available");
+                            }
                         }
                     }
                     if (openServer != null && !isSuitableForAgenda(openServer) && !iceCorpCards.isEmpty() && (weakServers.isEmpty() || agendaCorpCards.size() > 2)) {
                         CorpCard bestIce = getBestIce(iceCorpCards, openServer, "Agenda");
                         if (bestIce != null && installCard(openServer, bestIce)) {
+                            openServer.reserveForAgenda();
                             return true;
                         }
                     }
