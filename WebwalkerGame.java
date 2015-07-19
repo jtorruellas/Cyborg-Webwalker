@@ -104,7 +104,8 @@ public class WebwalkerGame {
                     System.out.println("Which server?");
                     int serverNumber = getIntFromUser(1, corp.getServers().size());
                     CorpCard nisei = getCardByName(corp.getScoredAgendas(), "Nisei MK II");
-                    if (nisei != null && nisei.getCounters() > 0) {
+                    Server server = corp.getServerByNumber(serverNumber - 1);
+                    if (nisei != null && nisei.getCounters() > 0 && server.getAsset().isAgenda()) {
                         System.out.println("Corp ends run using Nisei agenda counter");
                         nisei.setCounters(nisei.getCounters() - 1);
                         if (nisei.getCounters() == 0) {
@@ -119,7 +120,7 @@ public class WebwalkerGame {
                         System.out.println("Was Sneakdoor Beta used?");
                         isSneakdoor = getStringFromUser();
                     }
-                    if (isSneakdoor != null && "yes".equals(isSneakdoor)) {
+                    if (isSneakdoor != null && ("yes".equals(isSneakdoor) || "y".equals(isSneakdoor))) {
                         corp.addServerAccessed(corp.getServerByNumber(0)); //archives is weak
                     } else if (!serverRemoved) {
                         corp.addServerAccessed(corp.getServerByNumber(serverNumber-1));
@@ -304,13 +305,16 @@ public class WebwalkerGame {
                 }
                 String command = getStringFromUser();
                 if ("steal".equals(command)) {
-                    if (card.isAgenda()) {
+                    boolean meetsAdditionalAgendaConditions = CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server);
+                    if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, true)))) {
                         runnerPoints = runnerPoints + card.getScoreValue();
                         cardsToSteal.add(card);
                         System.out.println("Runner steals agenda and has " + runnerPoints + " points");
                     } else {
                         System.out.println("Cannot steal card");
-                        i--;
+                        if (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || !meetsAdditionalAgendaConditions) {
+                            i--;
+                        }
                     }
                 }
             }
@@ -335,13 +339,15 @@ public class WebwalkerGame {
                 if ("trash".equals(command)) {
                     cardsToTrash.add(card);
                 } else if ("steal".equals(command)) {
-                    if (card.isAgenda()) {
+                    if (card.isAgenda() && CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server) && (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, true)))) {
                         runnerPoints = runnerPoints + card.getScoreValue();
                         cardsToSteal.add(card);
                         System.out.println("Runner steals agenda and has " + runnerPoints + " points");
                     } else {
                         System.out.println("Cannot steal card");
-                        i--;
+                        if (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName())) {
+                            i--;
+                        }
                     }
                 } else if ("jack out".equals(command)) {
                     break;

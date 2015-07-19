@@ -2,10 +2,12 @@ import java.util.*;
 
 public class CardAbility {
     private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp","Eliza's Toybox");
-    private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign");
+    private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign","Mental Health Clinic");
     private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
     private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei","Jackson Howard");
     private static List<String> hostedCardsToTrash = Arrays.asList("Rook","Knight","Bishop");
+    private static List<String> conditionalAgendas = Arrays.asList("NAPD Contract");
+    private static List<String> agendaConditionCards = Arrays.asList("Strongbox");
     private static CardAbility instance = null;
     private boolean debugMode = false;
 
@@ -20,18 +22,22 @@ public class CardAbility {
     }
 
     public boolean activate(CorpCard card, Corp corp) {
-        return activate(card, corp, null, null);
+        return activate(card, corp, null, null, false);
+    }
+
+    public boolean activate(CorpCard card, Corp corp, boolean accessFromRunner) {
+        return activate(card, corp, null, null, accessFromRunner);
     }
 
     public boolean activate(CorpCard card, Corp corp, Server server) {
-        return activate(card, corp, server, null);
+        return activate(card, corp, server, null, false);
     }
 
     public boolean activate(CorpCard card, Corp corp, String location) {
-        return activate(card, corp, null, location);
+        return activate(card, corp, null, location, false);
     }
 
-    public boolean activate(CorpCard card, Corp corp, Server server, String location) {
+    public boolean activate(CorpCard card, Corp corp, Server server, String location, boolean accessFromRunner) {
         debugMode = corp.debugMode;
 
         if ("Melange Mining Corp".equals(card.getName()) && corp.getClicks() > 2 && useMelange(corp)) {
@@ -74,6 +80,12 @@ public class CardAbility {
         }
         if ("Pad Campaign".equals(card.getName())) {
             System.out.println(card.getName() + " triggers and gains 1 credit");
+            corp.gainCreds(1);
+            return true;
+        }
+        if ("Mental Health Clinic".equals(card.getName())) {
+            System.out.println(card.getName() + " triggers and gains 1 credit");
+            System.out.println("Runner's maximum hand size is increased by 1");
             corp.gainCreds(1);
             return true;
         }
@@ -123,6 +135,35 @@ public class CardAbility {
             corp.gainCreds(3);
             corp.drawCorpCards(1);
             return true;
+        }
+        if ("Blue Level Clearance".equals(card.getName()) && corp.getClicks() > 1) {
+            System.out.println("Corp plays " + card.getName() + " for " + card.getCost() + " and an extra click, gains 5 credits, and draws 2 cards");
+            corp.gainCreds(5);
+            corp.removeClick();
+            corp.drawCorpCards(2);
+            return true;
+        }
+        if ("Celebrity Gift".equals(card.getName()) && corp.getClicks() > 1 && corp.getHQ().getAssets().size() > 3) {
+            System.out.println("Corp plays " + card.getName() + " for " + card.getCost() + " and an extra click, reveals: ");
+            int totalCreds = 0;
+            for (CorpCard c : corp.getHQ().getAssets()) {
+                System.out.print(c.getActualName() + ", ");
+                totalCreds += 2;
+            }
+            System.out.print("gains " + totalCreds + " credits");
+            corp.gainCreds(totalCreds);
+            corp.removeClick();
+            return true;
+        }
+        if ("NAPD Contract".equals(card.getActualName())) {
+            if (accessFromRunner) {
+                System.out.println("Runner must pay an additional 4 credits to steal " + card.getName());
+                System.out.println("Did runner pay credits?");
+                String paidCreds = getStringFromUser();
+                return paidCreds != null && ("yes".equals(paidCreds) || "y".equals(paidCreds));
+            } else {
+                return true;
+            }
         }
         if ("Bioroid Efficiency Research".equals(card.getName())) {
             CorpCard ice = null;
@@ -253,6 +294,13 @@ public class CardAbility {
         if ("Sundew".equals(card.getName())) {   
             corp.gainCreds(2);
             System.out.println("Sundew triggers and the corp gains 2 credits.");
+            return true;
+        }
+        if ("Strongbox".equals(card.getActualName())) {   
+            System.out.println(card.getActualName() + " requires runner must pay an additional click to steal agenda in this server");
+            System.out.println("Did runner pay click?");
+            String paidCreds = getStringFromUser();
+            return paidCreds != null && ("yes".equals(paidCreds) || "y".equals(paidCreds));
         }
         return false;
     }
@@ -275,7 +323,9 @@ public class CardAbility {
     public List<String> getHostedCardsToTrash() {
         return hostedCardsToTrash;
     }
-
+    public List<String> getConditionalAgendas() {
+        return conditionalAgendas;
+    }
 // Card specific evaluation functions
     public boolean useMelange(Corp corp) {
         return (corp.getCreds() < 15);
@@ -385,6 +435,18 @@ public class CardAbility {
         }
         return false;
     }
+
+    public boolean meetsAdditionalAgendaConditions(Corp corp, Server server) {
+        for (CorpCard card : server.getAssets()) {
+            if (agendaConditionCards.contains(card.getActualName())) {
+                if (!activate(card, corp)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
     public static String getStringFromUser() {
         try {
             Scanner reader = new Scanner(System.in);
