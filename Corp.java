@@ -556,8 +556,10 @@ public class Corp {
                     hasUnrezzed = true;
                 }
             }
-            if (!hasUnrezzed && server.getIce().size() < 4) {
-                weakServers.add(server);
+            if (!hasUnrezzed && server.getIce().size() < 5) {
+                if (!server.isArchives() || (server.isArchives() && server.getIce().size() < 2)) {
+                    weakServers.add(server);
+                }
             }
         }
         return weakServers;

@@ -6,9 +6,11 @@ public class CardAbility {
     private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
     private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei","Jackson Howard");
     private static List<String> hostedCardsToTrash = Arrays.asList("Rook","Knight","Bishop");
-    private static List<String> conditionalAgendas = Arrays.asList("NAPD Contract");
+    private static List<String> conditionalAgendas = Arrays.asList("NAPD Contract","The Future Perfect");
     private static List<String> agendaConditionCards = Arrays.asList("Strongbox");
     private static List<String> doubleOperations = Arrays.asList("Celebrity Gift");
+    private static List<String> moneyCards = Arrays.asList("Hedge Fund","Celebrity Gift","Mental Health Clinic","Sundew");
+    private static List<String> moneyAssets = Arrays.asList("");
     private static CardAbility instance = null;
     private boolean debugMode = false;
 
@@ -114,7 +116,6 @@ public class CardAbility {
                     System.out.println("Caprice loses and server is accessable");
                 }
             }
-            
             return true;
         }
         if ("Beanstalk Royalties".equals(card.getName())) {
@@ -195,6 +196,38 @@ public class CardAbility {
             corp.setMaxClicks((corp.getMaxClicks()+1));
             corp.gainClicks(1);
             System.out.println("Mandatory Upgrades gains the Corp 1 additional click per turn (" + corp.getMaxClicks() + " total)");
+            return true;
+        }
+        if ("The Future Perfect".equals(card.getActualName())) {
+            if (accessFromRunner && (server == null || !server.isRemote())) {
+                System.out.println(card.getName() + " triggers: let's play a game");
+                System.out.println("How many credits are you playing with? (0, 1, or 2)");
+                int runnerCreds = getIntFromUser(0,2);
+                System.out.println("How many credits did you spend?");
+                int runnerSpent = getIntFromUser(0,2);
+                if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
+                    System.out.println("Corp spends 2 credits and prevents agenda access");
+                    corp.spendCreds(2);
+                    return false;
+                } else if (runnerCreds == 0 && corp.getDisplayCreds() >= 1) {
+                    System.out.println("Corp spends 1 credit and prevents agenda access");
+                    corp.spendCreds(1);
+                    return false;
+                } else {
+                    Random rand = new Random();
+                    int creds = (corp.getDisplayCreds() >= 2) ? 2 : corp.getDisplayCreds();
+                    int value = rand.nextInt(creds+1); 
+                    corp.spendCreds(value);
+                    System.out.println("Corp spends "+ value + " credits");
+                    if (runnerSpent != value) {
+                        System.out.println("Corp wins and prevents agenda access");
+                        return false;
+                    } else {
+                        System.out.println("Corp loses and agenda is stolen");
+                        return true;
+                    }
+                }
+            }
             return true;
         }
         if ("Jackson Howard".equals(card.getName())) {
@@ -320,6 +353,9 @@ public class CardAbility {
     }
     public List<String> getPreAccessAssets() {
         return preAccessAssets;
+    }
+    public List<String> getMoneyCards() {
+        return moneyCards;
     }
     public List<String> getHostedCardsToTrash() {
         return hostedCardsToTrash;

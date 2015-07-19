@@ -307,7 +307,7 @@ public class WebwalkerGame {
                 String command = getStringFromUser();
                 if ("steal".equals(command)) {
                     boolean meetsAdditionalAgendaConditions = CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server);
-                    if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, true)))) {
+                    if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, server, null, true)))) {
                         runnerPoints = runnerPoints + card.getScoreValue();
                         cardsToSteal.add(card);
                         System.out.println("Runner steals agenda and has " + runnerPoints + " points");
@@ -323,7 +323,7 @@ public class WebwalkerGame {
             for (int i=0; i<numberAccessed;i++) {
                 CorpCard card = serverAssets.get(i);
                 if (card.isAgenda()) {
-                    System.out.println("Accessing: " + card.getActualName() + ". Trash for 0, steal, or leave?");
+                    System.out.println("Accessing: " + card.getActualName() + ". Steal or leave?");
                 } else if (card.isTrap(server.getName())) {
                     System.out.println("Accessing: " + card.getActualName() + ".");
                     if (!(card.getCost() > corp.getDisplayCreds()) && (!card.isAdvanceable() || (card.isAdvanceable() && card.getAdvancement() > 0))) {
@@ -340,7 +340,8 @@ public class WebwalkerGame {
                 if ("trash".equals(command)) {
                     cardsToTrash.add(card);
                 } else if ("steal".equals(command)) {
-                    if (card.isAgenda() && CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server) && (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, true)))) {
+                    boolean meetsAdditionalAgendaConditions = CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server);
+                    if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, server, null, true)))) {
                         runnerPoints = runnerPoints + card.getScoreValue();
                         cardsToSteal.add(card);
                         System.out.println("Runner steals agenda and has " + runnerPoints + " points");
