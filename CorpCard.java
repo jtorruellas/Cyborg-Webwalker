@@ -1,7 +1,21 @@
+import java.awt.*;
+import java.text.*;
+import java.awt.font.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.io.*;
 import java.util.*;
+import java.lang.String;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 
-public class CorpCard extends Card {
-
+public class CorpCard extends Card 
+{
     private int advancement;
     private boolean isAdvanceable = false;
     private int trashCost = 99;
@@ -9,23 +23,93 @@ public class CorpCard extends Card {
     private int strength = 0;
     private int subroutines = 0;
     private boolean rezzed = false;
+    private boolean exposed = false;
     public int adonisCreds = 12;
     public int trapCounter = 0;
     public String hostedCard = "";
     private int counters = 0;
+    private BufferedImage bigImage;
+    private BufferedImage smallImage;
+    private boolean zoomedImage = false;
+    private int xCoord;
+    private int yCoord;
+    private int serverNumber;
+    private int icePosition;
 
-    public CorpCard() {
-        super.setName(new String());
+    public CorpCard(String name, String type) {
+        super.setName(name);
         advancement = 0;
         isAdvanceable = false;
         trashCost = 99;
         scoreValue = 0;
         strength = 0;
         subroutines = 0;
+        setType(type);
+        loadImage();
     }
 
+    public void loadImage() {
+        try {
+            bigImage = ImageIO.read(new File("img\\" + getName() + ".png"));
+            try {
+                if (isIce()) {
+                    smallImage = getScaledImage(bigImage,209,150);
+                } else {
+                    smallImage = getScaledImage(bigImage,150,209);
+                }
+                
+            } catch(IOException ex) {
+                System.out.println("hey transform error");
+            }
+        } catch (IOException ex) {
+            System.out.println("hey missing " + "img\\" + getName() + ".png");
+        }
+    }
     public void advance(int counters) {
         advancement = advancement + counters;
+    }
+    public void setServerNumber(int serverNumber) {
+        this.serverNumber = serverNumber;
+    }
+    public void paintComponent (Graphics g){
+        draw(g);
+    }
+    public void draw (Graphics g){
+        //super.paintComponent(g);
+        if (smallImage != null && !zoomedImage) {
+            g.drawImage(smallImage, xCoord, yCoord, null);
+        } else if (bigImage != null && zoomedImage) {
+            if (isIce()) {
+                double rotationRequired = Math.toRadians (-90);
+                AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, (bigImage.getWidth()), (bigImage.getHeight()));
+                AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_BILINEAR);
+                g.drawImage(op.filter(bigImage, null), xCoord-120, yCoord-300, null);
+            } else {
+                g.drawImage(bigImage, xCoord, yCoord, null);
+            }
+        }
+        if (advancement > 0) {
+            g.setColor(Color.white);
+            g.fillOval((xCoord+smallImage.getWidth()/2)-20, (yCoord+smallImage.getHeight()/2)-20, 40, 40);
+            g.setColor(Color.black);
+            g.setFont(new Font("OCR A Extended", Font.BOLD, 32));
+            g.drawString(advancement + "", xCoord+(smallImage.getWidth()/2)-11, yCoord+(smallImage.getHeight()/2)+11);
+            //System.out.println("hey printed adv");
+        }
+    }
+
+    public static BufferedImage getScaledImage(BufferedImage image, int width, int height) throws IOException {
+        int imageWidth  = image.getWidth();
+        int imageHeight = image.getHeight();
+
+        double scaleX = (double)width/imageWidth;
+        double scaleY = (double)height/imageHeight;
+        AffineTransform scaleTransform = AffineTransform.getScaleInstance(scaleX, scaleY);
+        AffineTransformOp bilinearScaleOp = new AffineTransformOp(scaleTransform, AffineTransformOp.TYPE_BILINEAR);
+
+        return bilinearScaleOp.filter(
+            image,
+            new BufferedImage(width, height, image.getType()));
     }
     public boolean isIce() {
         if ("ICE".equals(type)) {
@@ -108,6 +192,15 @@ public class CorpCard extends Card {
     public void setStrength(int value) {
         strength = value;
     }
+    public void setIcePosition(int value) {
+        icePosition = value;
+    }
+    public void setXCoord(int value) {
+        xCoord = value;
+    }
+    public void setYCoord(int value) {
+        yCoord = value;
+    }
     public void setCounters(int value) {
         counters = value;
     }
@@ -125,6 +218,9 @@ public class CorpCard extends Card {
     public String getActualName() {
         return name;
     }
+    public int getServerNumber() {
+        return serverNumber;
+    }
     public int getTrashCost() {
         return trashCost;
     }
@@ -136,11 +232,32 @@ public class CorpCard extends Card {
     }
     public void rez() {
         rezzed = true;
+        loadImage();
+    }
+    public void expose() {
+        exposed = true;
+        loadImage();
     }
     public void derez() {
         rezzed = false;
     }
     public int getCounters() {
         return counters;
+    }
+    public boolean checkClickLocation(int xClick, int yClick, boolean zoom) {
+        int cardHeight = (isIce()) ? 150 : 209;
+        int cardWidth= (isIce()) ? 209 : 150;
+        boolean isIt = xClick > (xCoord + 20) && xClick < (xCoord + cardWidth + 20) && yClick > (yCoord + 30) && yClick < (yCoord + cardHeight + 30);
+        if (zoom) {
+            if (!zoomedImage && isIt) { 
+                zoomedImage = true;
+            } else if (zoomedImage) {
+                zoomedImage = false;
+            }
+        }
+        return isIt;
+    }
+    public boolean checkClickLocation(int xClick, int yClick) {
+        return checkClickLocation(xClick, yClick, false);
     }
 }

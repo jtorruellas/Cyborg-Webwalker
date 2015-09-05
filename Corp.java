@@ -1,6 +1,34 @@
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.io.*;
 import java.util.*;
+import java.lang.String;
+import java.text.*;
+import java.awt.font.*;
+import java.awt.event.*;
 
-public class Corp {
+ /*
+    The Song class is created by guitar and is built by a tab (text) file
+    in the following format:
+    6 [Number of strings]
+    E | . . .    [First "|" is a separator and is not interpreted]
+    B | . . .    [as a potential note. Notes are separated by spaces]
+    G | . .    4    [and notes not played are  noted as "."]
+    D | 2 2    4    [Any other String is valid input, so long as it]
+    A | 2 2    2    [is understood by guitarist.]
+    E | 0 0    .
+    10.0         [Tempo of the song. This number can be adjusted to fit music.]
+    -80            [Delay.  Also used to fit tab to music file]
+
+    Notes are stored by string in a string vector inside a GuitarString
+    and are displayed sequentially based on internally calculated "beat".  
+    Notes that are not played (denoted ".") will not be displayed in the 
+    main screen    and are only used in the tab file.  This can be changed in 
+    GuitarString.java.
+ */
+public class Corp extends JComponent{
 
     // ===========================================================Corp Resources
     private int c_creds = 5;
@@ -12,31 +40,34 @@ public class Corp {
     private Server rnd = null;
     private Server hq = null;
     private Server archives = null;
-    private List<CorpCard> c_deck = new ArrayList<CorpCard>(49); 
-    private List<CorpCard> c_hand = new ArrayList<CorpCard>(c_handLimit);
-    private List<CorpCard> c_agendas = new ArrayList<CorpCard>(10);
+    private ArrayList<CorpCard> c_deck = new ArrayList<CorpCard>(49); 
+    private ArrayList<CorpCard> c_hand = new ArrayList<CorpCard>(c_handLimit);
+    private ArrayList<CorpCard> c_agendas = new ArrayList<CorpCard>(10);
     private Map<String, RunnerCard> runnerCards = new HashMap<String, RunnerCard>(); 
     private int DRAW_MONEY_CARD_PROB = 45;
-    private List<Server> c_servers = new ArrayList<Server>();
-    private List<Server> serversAccessed = new ArrayList<Server>();
+    private ArrayList<Server> c_servers = new ArrayList<Server>();
+    private ArrayList<Server> serversAccessed = new ArrayList<Server>();
     private String corpName = "";
     private boolean usedAbility = false;
     public boolean debugMode = false;
     private Card current = null;
 
+    public int boardHeight = 800;
+
+
     // ===========================================================Initialize Corp
-    public Corp(String identity, List<CorpCard> deck, boolean debugMode) {
+    public Corp(String identity, ArrayList<CorpCard> deck, boolean debugMode) {
         corpName = identity;
         setDeck(deck);
         this.debugMode = debugMode;
         Collections.shuffle(deck);
         Collections.shuffle(deck);
-        c_servers.add(new Server("Archives"));
+        c_servers.add(new Server("Archives", 0));
         archives = getServerByNumber(0);
-        c_servers.add(new Server("RnD"));
+        c_servers.add(new Server("RnD", 1));
         rnd = getServerByNumber(1);
         rnd.setAssets(deck);
-        c_servers.add(new Server("HQ"));
+        c_servers.add(new Server("HQ", 2));
         hq = getServerByNumber(2);
         drawCorpCard();
         drawCorpCard();
@@ -53,16 +84,19 @@ public class Corp {
     public RunnerCard getRunnerCardByName(String cardName) {
         return runnerCards.get(cardName);
     }
-    public List<Server> getServers() {
+        public Collection<RunnerCard> getRunnerCards() {
+        return runnerCards.values();
+    }
+    public ArrayList<Server> getServers() {
         return c_servers;
     }
-    public List<Server> getServersAccessed() {
+    public ArrayList<Server> getServersAccessed() {
         return serversAccessed;
     }
-    public List<CorpCard> getScoredAgendas() {
+    public ArrayList<CorpCard> getScoredAgendas() {
         return c_agendas;
     }
-    public void setServersAccessed(List<Server> serversAccessed) {
+    public void setServersAccessed(ArrayList<Server> serversAccessed) {
         this.serversAccessed = serversAccessed;
     }
     public void addServerAccessed(Server server) {
@@ -85,7 +119,7 @@ public class Corp {
     public int getDisplayCreds() {
         return c_displayCreds;
     }
-    public void setDeck(List<CorpCard> deck) {
+    public void setDeck(ArrayList<CorpCard> deck) {
         c_deck = deck;
     }
     public int getHandCount() {
@@ -117,7 +151,7 @@ public class Corp {
         //activate pre-turn assets
         for(Server server : c_servers) {
             CorpCard asset = server.getAsset();
-            List<String> preTurnAssets = CardAbility.getInstance().getPreTurnAssets();
+            ArrayList<String> preTurnAssets = CardAbility.getInstance().getPreTurnAssets();
             if (asset != null && !asset.isAgenda() && !asset.isTrap() && !asset.isUpgrade()) {
                 if (!asset.isRezzed() && !(asset.getCost() > getDisplayCreds())) {
     /*
@@ -151,7 +185,7 @@ public class Corp {
                     }
                 }
             }
-            List<CorpCard> iceToTrash = new ArrayList<CorpCard>();
+            ArrayList<CorpCard> iceToTrash = new ArrayList<CorpCard>();
             for (CorpCard ice : server.getIce()) {
                 if (!ice.isRezzed() && CardAbility.getInstance().getHostedCardsToTrash().contains(ice.getHostedCard())) {
                     iceToTrash.add(ice);
@@ -292,7 +326,7 @@ public class Corp {
         } else if (!card.isAgenda()) {
             reserveCreds(card.getCost());
         }
-        Server newServer = new Server(card);
+        Server newServer = new Server(card, c_servers.size());
         hq.getAssets().remove(card);
         c_servers.add(newServer);
         System.out.println("Corp installs " + card.getName() + " on a new server");
@@ -329,7 +363,9 @@ public class Corp {
             refundCreds(server.getAsset().getCost());
         }
         server.getAssets().remove(card);
-        server.removeAsset();
+        if (server.getAsset().getActualName().equals(card.getActualName())) {
+            server.removeAsset();
+        }
         trashCard(card);
     }
     public void trashIceFromServer(CorpCard ice, Server server) {
@@ -344,7 +380,9 @@ public class Corp {
     public void stealCardFromServer(CorpCard card, Server server) {
         debugPrint("debug stealCardFromServer");
         server.getAssets().remove(card);
-        server.removeAsset();
+        if (server.isRemote()) {
+            server.removeAsset();
+        }
         if ("Other Jinteki".equals(corpName)) {
             System.out.println("Corp deals one net damage to runner");
         }
@@ -359,9 +397,9 @@ public class Corp {
         debugPrint("debug gainClicks");
         c_clicks = c_clicks + clicks;
     }
-    public boolean useSpecialCard(List<CorpCard> playable) {
+    public boolean useSpecialCard(ArrayList<CorpCard> playable) {
         debugPrint("debug useSpecialCard");
-        List<String> cardsForClickNumber = CardAbility.getInstance().getCardsForClickNumber(c_clicks);
+        ArrayList<String> cardsForClickNumber = CardAbility.getInstance().getCardsForClickNumber(c_clicks);
         if (cardsForClickNumber == null) {
             return false;
         }
@@ -381,7 +419,7 @@ public class Corp {
     }
     public boolean usePreAgendaSpecialCard() {
         debugPrint("debug usePreAgendaSpecialCard");
-        List<String> preAgendaCards = CardAbility.getInstance().getPreAgendaCards();
+        ArrayList<String> preAgendaCards = CardAbility.getInstance().getPreAgendaCards();
         if (preAgendaCards == null) {
             return false;
         }
@@ -406,7 +444,7 @@ public class Corp {
 
     // =========================================================== Utility Functions
     public void cleanupServers() {
-        List<Server> serversToRemove = new ArrayList<Server>();
+        ArrayList<Server> serversToRemove = new ArrayList<Server>();
         for (Server server : c_servers) {
             if (server.isRemote() && server.getIce().isEmpty() && server.getAssets().isEmpty() && server.getAsset() == null) {
                 serversToRemove.add(server);
@@ -449,15 +487,19 @@ public class Corp {
         }
     }
     public void addRunnerCard(String cardName) {
-        RunnerCard runnerCard = new RunnerCard();
-        runnerCard.setName(cardName);
+        RunnerCard runnerCard = new RunnerCard(cardName);
+        System.out.println("hey setXCoord " + (30+(runnerCards.size()*175)));
+        System.out.println("hey setYCoord " + (boardHeight-209));
+        runnerCard.setXCoord(30+(runnerCards.size()*175));
+        runnerCard.setYCoord(boardHeight-209);
         runnerCards.put(cardName, runnerCard);
         System.out.println("Runner installs " + cardName);
+
     }
-    public void removeRunnerCard(String cardName) {
-        if (runnerCards.containsKey(cardName)) {
-            runnerCards.remove(cardName);
-            System.out.println("Runner trashes " + cardName);
+    public void removeRunnerCard(Card card) {
+        if (runnerCards.containsKey(card.getName())) {
+            runnerCards.remove(card.getName());
+            System.out.println("Runner trashes " + card.getName());
         } else {
             System.out.println("No card with that name exists.");
         }
@@ -518,7 +560,12 @@ public class Corp {
     }
     public Server getServerByNumber(int serverNumber) {
         debugPrint("debug getServerByNumber");
-        return c_servers.get(serverNumber);
+        if (c_servers.size() > serverNumber) {
+            return c_servers.get(serverNumber);
+        } else {
+            return null;
+        }
+        
     }
     public CorpCard getMoneyAsset() {
         debugPrint("debug getMoneyAsset");
@@ -542,7 +589,7 @@ public class Corp {
         }
         return cardAsset;
     }
-    public List<Server> getWeakServers() {
+    public ArrayList<Server> getWeakServers() {
         ArrayList<Server> weakServers = new ArrayList<Server>();
         for (Server server : c_servers) {
             if ((server.isRnD() ||server.isHQ()) && server.getIce().isEmpty()) {
@@ -564,9 +611,9 @@ public class Corp {
         }
         return weakServers;
     }
-    public List<CorpCard> getCorpCardsByType(List<CorpCard> playable, String type) {
+    public ArrayList<CorpCard> getCorpCardsByType(ArrayList<CorpCard> playable, String type) {
         debugPrint("debug getCorpCardsByType");
-        List<CorpCard> cardList = new ArrayList<CorpCard>();
+        ArrayList<CorpCard> cardList = new ArrayList<CorpCard>();
         
         for (CorpCard card : playable) {
             if (type.equals(card.getType())) {
@@ -575,9 +622,9 @@ public class Corp {
         }
         return cardList;
     }
-    public List<CorpCard> getCorpAssetsByAttribute(List<CorpCard> playable, String attribute) {
+    public ArrayList<CorpCard> getCorpAssetsByAttribute(ArrayList<CorpCard> playable, String attribute) {
         debugPrint("debug getCorpAssetsByAttribute");
-        List<CorpCard> cardList = new ArrayList<CorpCard>();
+        ArrayList<CorpCard> cardList = new ArrayList<CorpCard>();
         for (CorpCard card : playable) {
             if (card.hasAttribute(attribute)) {
                 cardList.add(card);
@@ -585,9 +632,9 @@ public class Corp {
         }
         return cardList;
     }
-    public List<CorpCard> getPlayableCorpCards() {
+    public ArrayList<CorpCard> getPlayableCorpCards() {
         debugPrint("debug getPlayableCorpCards");
-        List<CorpCard> cardList = new ArrayList<CorpCard>();
+        ArrayList<CorpCard> cardList = new ArrayList<CorpCard>();
         for (CorpCard card : hq.getAssets()) {
             int cost = card.getCost();
             if (card.isIce()){
@@ -633,21 +680,21 @@ public class Corp {
         }
         return null;
     }
-    public Server getBestWeakServer(List<Server> weakServers, int agendasInHand) {
+    public Server getBestWeakServer(ArrayList<Server> weakServers, int agendasInHand) {
         debugPrint("debug getBestWeakServer");
         return weakServers.get(0);
     }
-    public CorpCard getBestAgenda(List<CorpCard> playableAgendas) {
+    public CorpCard getBestAgenda(ArrayList<CorpCard> playableAgendas) {
         debugPrint("debug getBestAgenda");
         return playableAgendas.get(0);
     }
-    public CorpCard getBestIce(List<CorpCard> playableIce, Server server, String targetServer) {
+    public CorpCard getBestIce(ArrayList<CorpCard> playableIce, Server server, String targetServer) {
         debugPrint("debug getBestIce");
         //takes into account if it can be rezzed
         String iceTypes = "";
         String iceAttributes = "";
         if (server != null) {
-            List<CorpCard> ice = server.getIce();
+            ArrayList<CorpCard> ice = server.getIce();
             if (ice != null) {
                 for (CorpCard card : ice) {
                     iceTypes = iceTypes + card.getSubType() + ",";
@@ -689,7 +736,7 @@ public class Corp {
         }
         return null;
     }
-    public CorpCard getBestOperation(List<CorpCard> playableOperations) {
+    public CorpCard getBestOperation(ArrayList<CorpCard> playableOperations) {
         for (CorpCard card : playableOperations) {
             if (!card.getActualName().equals("Trick of Light")) {
                 return card;
@@ -697,7 +744,7 @@ public class Corp {
         }
         return null;
     }
-    public CorpCard getBestAsset(List<CorpCard> playableAssets) {
+    public CorpCard getBestAsset(ArrayList<CorpCard> playableAssets) {
         return playableAssets.get(0);
     }
     public boolean assetNeedsIce(CorpCard asset) {
@@ -721,14 +768,14 @@ public class Corp {
     }
 
 // =========================================================== Spend Click functions
-public boolean tryPlayingCard(List<CorpCard> playable) {
+public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
     debugPrint("debug tryPlayingCard");
     if (!playable.isEmpty()) {
-            List<Server> weakServers = getWeakServers();
-            List<CorpCard> iceCorpCards = getCorpCardsByType(playable, "ICE");
-            List<CorpCard> assetCorpCards = getCorpCardsByType(playable, "Asset");
-            List<CorpCard> agendaCorpCards = getCorpAssetsByAttribute(playable, "Advanceable");
-            List<CorpCard> operationCorpCards = getCorpCardsByType(playable, "Operation");
+            ArrayList<Server> weakServers = getWeakServers();
+            ArrayList<CorpCard> iceCorpCards = getCorpCardsByType(playable, "ICE");
+            ArrayList<CorpCard> assetCorpCards = getCorpCardsByType(playable, "Asset");
+            ArrayList<CorpCard> agendaCorpCards = getCorpAssetsByAttribute(playable, "Advanceable");
+            ArrayList<CorpCard> operationCorpCards = getCorpCardsByType(playable, "Operation");
             Server openServer = getBestOpenServer();
             debugPrint("debug weakServers " + weakServers.size());
             debugPrint("debug icecards " + iceCorpCards.size());
@@ -809,7 +856,7 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
     public boolean spendClick() {
         debugPrint("debug spendClick");
 
-        List<CorpCard> playable = getPlayableCorpCards();
+        ArrayList<CorpCard> playable = getPlayableCorpCards();
         CorpCard moneyAsset = getMoneyAsset();
         CorpCard cardAsset = getCardAsset();
 
@@ -880,4 +927,33 @@ public boolean tryPlayingCard(List<CorpCard> playable) {
             System.out.println(s);
         }
     }
+
+    public void paintComponent (Graphics g){
+        super.paintComponent(g);
+        for (int i = c_servers.size()-1; i >= 0; i--) {
+            c_servers.get(i).refreshCards(g);
+        }
+        for (RunnerCard c : runnerCards.values()) {
+            c.setXCoord(30+((runnerCards.size()-1)*175));
+            c.setYCoord(boardHeight-300);
+            c.draw(g);
+        }
+    }
+
+    public Card getCardFromCoord (int xCoord, int yCoord){
+        for (Server s : c_servers) {
+            CorpCard card = s.getCardFromCoord(xCoord, yCoord);
+            if (card != null) {
+                return card;
+            }
+        }
+        for (RunnerCard rc : getRunnerCards()) {
+            if (rc.checkClickLocation(xCoord, yCoord)) {
+                return rc;
+            }
+        }
+        return null;
+    }
+
 }
+

@@ -1,6 +1,18 @@
 import java.util.*;
 
-public class Card {
+
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.io.*;
+import java.lang.String;
+import java.text.*;
+import java.awt.font.*;
+import java.awt.event.*;
+
+
+public class Card extends JComponent {
     protected int cost = 0;
     protected String name;
     protected String type = "";
@@ -26,11 +38,6 @@ public class Card {
     public String getSide() {
         return side;
     }
-    /*
-    public boolean activate(){
-        return true;
-    }
-    */
     public String getType() {
         return type;
     }

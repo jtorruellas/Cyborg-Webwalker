@@ -1,14 +1,92 @@
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.border.*;
+import java.io.*;
 import java.util.*;
-import java.io.BufferedReader;
-import java.io.FileReader;
 
-public class WebwalkerGame {
-
-
+public class WebwalkerGame extends JFrame  {
+    private static final long serialVersionUID = 123456789;
+    private int beat;
+    private boolean songOver;
+    private boolean mp3Loaded = false;
     private static Corp corp = null;
     private static boolean debugMode = false;
+    public int runnerClicks = 4;
+    public int runnerPoints = 0;
+    public boolean runnerTurn;
+    public String status = "Welcome to Cyborg - Webwalker";
+    public boolean menuShowing = false;
+    public static JFrame frame;
+    public JLabel creditsLabel;
+    public JLabel clicksLabel;
+    public JLabel hqLabel;
+    public JLabel currentLabel;
 
-    public static void main(String[] args) {
+    public static void main (String [] args) throws IOException {
+
+        
+        frame = new WebwalkerGame(args);
+    }
+
+    public WebwalkerGame (String [] args) {
+
+
+        //Window and layout setup - content, controls, and settings panels
+        setLocation (100, 100);
+        setSize (1600, 800);
+        setDefaultCloseOperation (EXIT_ON_CLOSE);
+        final Container content = getContentPane();
+        content.setLayout (new BorderLayout());
+        JPanel topPanel = new JPanel ();
+        JPanel leftPanel = new JPanel ();
+        JPanel rightPanel = new JPanel ();
+        JPanel bottomPanel = new JPanel ();
+        content.add (rightPanel, BorderLayout.EAST);
+        content.add (bottomPanel, BorderLayout.SOUTH);
+        content.add (topPanel, BorderLayout.NORTH);
+        content.add (leftPanel, BorderLayout.WEST);
+        //rightPanel.setBorder (new LineBorder(Color.BLACK, 2));
+        leftPanel.setPreferredSize(new Dimension(20, 2000));
+        topPanel.setPreferredSize(new Dimension(2000, 30));
+        rightPanel.setPreferredSize(new Dimension(300, 2000));
+        rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.PAGE_AXIS));
+        
+        //bottomPanel.setBorder (new LineBorder(Color.BLACK, 2));
+        bottomPanel.setLayout (new FlowLayout());
+        
+        creditsLabel = new JLabel("Credits: 5               ");
+        creditsLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
+        bottomPanel.add(creditsLabel);
+        clicksLabel = new JLabel("Clicks: 3               ");
+        clicksLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
+        bottomPanel.add(clicksLabel);
+        hqLabel = new JLabel("HQ: 5/5               ");
+        hqLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
+        bottomPanel.add(hqLabel);
+        currentLabel = new JLabel("Current: None");
+        currentLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
+        bottomPanel.add(currentLabel);
+        JTextArea statusLabel = new JTextArea (status);
+        statusLabel.setMargin(new Insets(5,5,5,5));
+        statusLabel.setEditable(false);
+        statusLabel.setFont(new Font("Agency FB", Font.BOLD, 20));
+        bottomPanel.setBackground(Color.LIGHT_GRAY);
+        bottomPanel.setForeground(Color.DARK_GRAY);
+        statusLabel.setBackground(Color.WHITE);
+        statusLabel.setForeground(Color.BLACK);
+        topPanel.setBackground(Color.LIGHT_GRAY);
+        leftPanel.setBackground(Color.LIGHT_GRAY);
+
+        CardAbility.getInstance().setFrame(frame);
+
+        //rightPanel.add (statusLabel);
+        //JTextField consoleField = new JTextField ("");
+        //consoleField.setFont(new Font("Agency FB", Font.BOLD, 20));
+
+        JScrollPane scrollPane = new JScrollPane(statusLabel, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        rightPanel.add(scrollPane);
+
         if (args.length == 0) {
             System.out.println("Please give a Corp deck file name");
             return;
@@ -18,45 +96,87 @@ public class WebwalkerGame {
             debugMode = ("debug".equals(args[1]));
         }
 
-        Map<String, List<CorpCard>> deckWithIdentity = buildDeck(corpDeckFilename);
+        Map<String, ArrayList<CorpCard>> deckWithIdentity = buildDeck(corpDeckFilename);
         String identity = "";
         for (String s :deckWithIdentity.keySet()) {
             identity = s;
         }
         System.out.println("Corp is playing " + identity);
         corp = new Corp(identity, deckWithIdentity.get(identity), debugMode);
+
         if(corp.mulligan()) {
             System.out.println("Corp takes a mulligan");
             corp = new Corp(identity, deckWithIdentity.get(identity), debugMode);
         }
-
-        int runnerClicks = 4;
-        int runnerPoints = 0;
         int turns = 0;
 
-        while (runnerPoints < 7 && corp.getCorpScore() < 7) {
-            System.out.println("\n\n*** " + (turns++) + " ***\n"); 
+        content.add(corp, BorderLayout.CENTER);
+        corp.setBorder (new LineBorder(Color.DARK_GRAY, 3));
+        content.addMouseListener(new CardZoomer(corp));
+        setVisible (true);
+        repaint();
+
+        while (runnerPoints < 7 && corp.getCorpScore() < 7) {                
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            PrintStream ps = new PrintStream(baos);
+            // IMPORTANT: Save the old System.out!
+            PrintStream old = System.out;
+            // Tell Java to use your special stream
+            System.setOut(ps);
+            status = "*** " + (turns++) + " ***\nCorp begins turn and performs mandatory draw";  
             corp.resetClicks(corp.getMaxClicks());
             corp.preTurn();
             corp.drawCorpCards(1);
-            System.out.println("Corp begins turn and performs mandatory draw");  
+
+            System.out.flush();
+            System.setOut(old);
+            status =  status + "\n" + baos.toString();
+            statusLabel.setText(status);
+            refreshBoard();
+           
             while (corp.getClicks() > 0) {
-                renderCorpBoard(corp);
+                try {
+                    Thread.sleep(2000);
+                } 
+                catch (InterruptedException e) {
+                }
+
+                baos = new ByteArrayOutputStream();
+                ps = new PrintStream(baos);
+                // IMPORTANT: Save the old System.out!
+                old = System.out;
+                // Tell Java to use your special stream
+                System.setOut(ps);
+
                 System.out.println("Click " + (corp.getMaxClicks()-corp.getClicks()+1) + ": ");
-                if (corp.spendClick()) {
+                boolean clickSpent = corp.spendClick();
+
+
+                 // Create a stream to hold the output
+            
+
+                if (clickSpent) {
+                    // Put things back
+                    System.out.flush();
+                    System.setOut(old);
+                    status =  status + "\n" + baos.toString();
+                    statusLabel.setText(status);
+                    updateCorpStatus();
+
                     corp.removeClick();
                     corp.cleanupServers();
                     Scanner reader = new Scanner(System.in);
-                    System.out.println("\nPress enter to continue");
-                    reader.nextLine();
+                    refreshBoard();
                 }
             }
             System.out.println("Corp ends turn");
             corp.discardDownToLimit();
+            hqLabel.setText("HQ: " + corp.getHandCount() + "/" + corp.getHandLimit() + "               ");
             
-            
+            status = status + "\n\nRunner's turn begins\n";  
+            statusLabel.setText(status);
             runnerClicks = 3;
-            renderCorpBoard(corp);
+            //renderCorpBoard(corp);
 
             for (Server s : corp.getServers()) {
                 if (s.isRemote()) {
@@ -70,195 +190,258 @@ public class WebwalkerGame {
                     }
                 }
             }
+            runnerTurn = true;
             while (runnerClicks > 0) {
-                System.out.print("run>");
-                String command = getStringFromUser();
-                if ("rez ice".equals(command)) {
-                    CorpCard ice = getIceCard(corp, false);
-                    if (ice != null && !ice.isRezzed()) {
-                        System.out.println("Additional Rez Cost: ");
-                        int extraRezCost = getIntFromUser(0, 10);
-                        if (corp.getDisplayCreds() >= (ice.getCost() + extraRezCost)) {
-                            corp.spendReservedCreds(ice.getCost());
-                            corp.spendCreds(extraRezCost);
-                            ice.rez();
-                            renderCorpBoard(corp);
-                            System.out.println("Corp rezzes " + ice.getName() + "\n");
-                        } else {
-                            renderCorpBoard(corp);
-                            System.out.println("Corp does not rez ice\n");
-                        }
-                    }
-                } else if ("derez ice".equals(command)) {
-                    CorpCard ice = getIceCard(corp, false);
-                    if (ice != null && ice.isRezzed()) {
-                        ice.derez();
-                        corp.reserveCreds(ice.getCost());
-                        renderCorpBoard(corp);
-                        System.out.println("Corp forced to derez " + ice.getName());
-                    }
-                }else if ("trash ice".equals(command)) {
-                    CorpCard ice = getIceCard(corp, true);
-                } else if ("end turn".equals(command) || "end".equals(command)) {
-                    runnerClicks = 0;
-                } else if ("access server".equals(command)) {
-                    System.out.println("Which server?");
-                    int serverNumber = getIntFromUser(1, corp.getServers().size());
-                    CorpCard nisei = getCardByName(corp.getScoredAgendas(), "Nisei MK II");
-                    Server server = corp.getServerByNumber(serverNumber - 1);
-                    if (nisei != null && nisei.getCounters() > 0 && CardAbility.getInstance().useNisei(corp, server)) {
-                        System.out.println("Corp ends run using Nisei agenda counter");
-                        nisei.setCounters(nisei.getCounters() - 1);
-                        if (nisei.getCounters() == 0) {
-                            corp.removeAgenda(nisei);
-                        }
-                    } else {
-                        runnerPoints = accessCardsFromServer(corp.getServerByNumber(serverNumber - 1), runnerPoints);
-                    }
-                    boolean serverRemoved = corp.cleanupServer(serverNumber - 1);
-                    String isSneakdoor = null;
-                    if (serverNumber == 3 && corp.getRunnerCardByName("Sneakdoor Beta") != null) {
-                        System.out.println("Was Sneakdoor Beta used?");
-                        isSneakdoor = getStringFromUser();
-                    }
-                    if (isSneakdoor != null && ("yes".equals(isSneakdoor) || "y".equals(isSneakdoor))) {
-                        corp.addServerAccessed(corp.getServerByNumber(0)); //archives is weak
-                    } else if (!serverRemoved) {
-                        corp.addServerAccessed(corp.getServerByNumber(serverNumber-1));
-                    }
-                    renderCorpBoard(corp);
-                } else if ("expose asset".equals(command)) {
-                    if (corp.getServers().size() > 3) {
-                        System.out.println("Which server?");
-                        int serverNumber = getIntFromUser(4, corp.getServers().size());
-                        CorpCard asset = corp.getServerByNumber(serverNumber-1).getAsset();
-                        System.out.println("Corp forced to expose " + asset.getActualName());
-                    } else {
-                        System.out.println("No installed assets to expose");
-                    }
-                } else if ("expose ice".equals(command)) {
-                    CorpCard ice = getIceCard(corp, false);
-                    System.out.println("Corp forced to expose " + ice.getActualName());
-                } else if ("mill RnD".equals(command) || "mill rnd".equals(command)) {
-                    corp.millRnD();
-                    System.out.println("Corp forced to trash top card of RnD");
-                } else if ("adjust creds".equals(command)) {
-                    System.out.println("How many creds?");
-                    int creds = getIntFromUser(-10,10);
-                    corp.gainCreds(creds);
-                    System.out.println("Corp gains " + creds + " creds.");
-                } else if ("install program".equals(command)) {
-                    System.out.println("What program?");
-                    String cardName = getStringFromUser();
-                    corp.addRunnerCard(cardName);
-                } else if ("trash program".equals(command)) {
-                    System.out.println("What program?");
-                    String cardName = getStringFromUser();
-                    corp.removeRunnerCard(cardName);
-                } else if ("add virus".equals(command)) {
-                    System.out.println("On which card?");
-                    String cardName = getStringFromUser();
-                    RunnerCard card = corp.getRunnerCardByName(cardName);
-                    if (card == null) {
-                        System.out.println("No card with that name exists.");
-                    } else {
-                        card.addVirusCounter();
-                        System.out.println(card.getName() + " now has " + card.getVirusCounters() + " virus counters");
-                    }
-                } else if ("play current".equals(command)) {
-                    System.out.println("What current?");
-                    String cardName = getStringFromUser();
-                    Card card = new Card();
-                    card.setSide("Runner");
-                    card.setName(cardName);
-                    corp.setCurrent(card);
-                    System.out.println("Runner plays current " + cardName);
-                    renderCorpBoard(corp);
-                } else if ("host program".equals(command)) {
-                    System.out.println("What program?");
-                    String cardName = getStringFromUser();
-                    System.out.println("On which ICE?");
-                    CorpCard ice = getIceCard(corp, false);
-                    ice.setHostedCard(cardName);
-                    renderCorpBoard(corp);
-                } else if ("unhost program".equals(command)) {
-                    System.out.println("From which ICE?");
-                    CorpCard ice = getIceCard(corp, false);
-                    ice.setHostedCard("");
-                    renderCorpBoard(corp);
-                } else if ("help".equals(command)) {
-                    System.out.println("\n****** Help Menu ******");
-                    System.out.println("Servers are numbered left to right, starting with 1.");
-                    System.out.println("ICE is numbered from top to bottom, starting with 1.");
-                    System.out.println("Valid commands:");
-                    System.out.println("rez ice");
-                    System.out.println("derez ice");
-                    System.out.println("trash ice");
-                    System.out.println("access server");
-                    System.out.println("expose asset");
-                    System.out.println("expose ice");
-                    System.out.println("mill RnD");
-                    System.out.println("adjust creds");
-                    System.out.println("install program");
-                    System.out.println("trash program");
-                    System.out.println("add virus");
-                    System.out.println("play current");
-                    System.out.println("host program");
-                    System.out.println("unhost program");
-                    System.out.println("end turn\n");
-                } else if ("^C".equals(command)) {
-                    System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for list of valid commands.");
+                baos = new ByteArrayOutputStream();
+                ps = new PrintStream(baos);
+                // IMPORTANT: Save the old System.out!
+                old = System.out;
+                // Tell Java to use your special stream
+                System.setOut(ps);
+                try {
+                    Thread.sleep(100);
                 } 
-                else if (!"".equals(command)) {
-                    System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for list of valid commands.");
-                } 
+                catch (InterruptedException e) {
+                }
+                    // Put things back
+                    System.out.flush();
+                    System.setOut(old);
+                    if (!baos.toString().isEmpty()) {
+                        status =  status + baos.toString();
+                        statusLabel.setText(status);
+                    }
+                    refreshBoard();
             }
+            runnerTurn = false;
         }
         String winner = (runnerPoints > corp.getCorpScore()) ? "runner" : "corp";
         System.out.println("***** The " + winner + " wins the match! *****");
+
     }
 
-    public static int getIntFromUser(int min, int max) {
-        int intFromUser = -1;
-        while (intFromUser == -1) {
-            intFromUser = getIntFromUserSafe(min, max);
+    public void updateCorpStatus() {
+        creditsLabel.setText("Credits: " + corp.getDisplayCreds() + "               ");
+        clicksLabel.setText("Clicks: " + corp.getClicks() + "               ");
+        hqLabel.setText("HQ: " + corp.getHandCount() + "/" + corp.getHandLimit() + "               ");
+
+        Card current = corp.getCurrent();
+        if (current != null) {
+            currentLabel.setText("Current: " + current.getName() + " (" + current.getSide() + ")");
+        }
+    }
+
+    //public void executeCommand(String command, Corp corp, int runnerClicks, int runnerPoints) {
+    public void executeCommand(String command, Card card) {
+        if ("rez ice".equals(command)) {
+            CorpCard ice = (CorpCard) card;
+            if (ice != null && !ice.isRezzed()) {
+                //System.out.println();
+                int extraRezCost = getIntFromUser("Additional Rez Cost: ", 0, 10);
+                if (extraRezCost != -2) {
+                    if (corp.getDisplayCreds() >= (ice.getCost() + extraRezCost)) {
+                        corp.spendReservedCreds(ice.getCost());
+                        corp.spendCreds(extraRezCost);
+                        ice.rez();
+                        //renderCorpBoard(corp);
+                        System.out.println("Corp rezzes " + ice.getName() + "\n");
+                    } else {
+                        //renderCorpBoard(corp);
+                        System.out.println("Corp does not rez ice\n");
+                    }
+                }
+            }
+        } else if ("derez ice".equals(command)) {
+            CorpCard ice = (CorpCard) card;
+            if (ice != null && ice.isRezzed()) {
+                ice.derez();
+                corp.reserveCreds(ice.getCost());
+                //renderCorpBoard(corp);
+                System.out.println("Corp forced to derez " + ice.getName());
+            }
+        }else if ("trash ice".equals(command)) {
+            int yn = getYesNoFromUser("Are you sure you want\nto trash this ICE?");
+            if (yn == 0) {
+                System.out.println("Corp forced to trash " + card.getName());
+                corp.trashIceFromServer((CorpCard) card, corp.getServerByNumber(((CorpCard) card).getServerNumber()));
+            }                
+        } else if ("end turn".equals(command) || "end".equals(command)) {
+            runnerClicks = 0;
+        } else if ("access server".equals(command)) {
+            CorpCard nisei = getCardByName(corp.getScoredAgendas(), "Nisei MK II");
+            Server server = corp.getServerByNumber(((CorpCard)card).getServerNumber());
+            if (nisei != null && nisei.getCounters() > 0 && CardAbility.getInstance().useNisei(corp, server)) {
+                System.out.println("Corp ends run using Nisei agenda counter");
+                nisei.setCounters(nisei.getCounters() - 1);
+                if (nisei.getCounters() == 0) {
+                    corp.removeAgenda(nisei);
+                }
+            } else {
+                runnerPoints = accessCardsFromServer(corp.getServerByNumber(((CorpCard)card).getServerNumber()), runnerPoints);
+            }
+            boolean serverRemoved = corp.cleanupServer(((CorpCard)card).getServerNumber());
+            int isSneakdoor = -11;
+            if (((CorpCard)card).getServerNumber() == 3 && corp.getRunnerCardByName("Sneakdoor Beta") != null) {
+                System.out.println();
+                isSneakdoor = getYesNoFromUser("Was Sneakdoor Beta used?");
+            }
+            if (isSneakdoor == 0) {
+                corp.addServerAccessed(corp.getServerByNumber(0)); //archives is weak
+            } else if (!serverRemoved) {
+                corp.addServerAccessed(corp.getServerByNumber(((CorpCard)card).getServerNumber()));
+            }
+            //renderCorpBoard(corp);
+        } else if ("expose asset".equals(command)) {
+            if (corp.getServers().size() > 3) {
+                System.out.println("Which server?");
+                int serverNumber = getIntFromUser("Which server?", 4, corp.getServers().size());
+                CorpCard asset = corp.getServerByNumber(serverNumber-1).getAsset();
+                System.out.println("Corp forced to expose " + asset.getActualName());
+            } else {
+                System.out.println("No installed assets to expose");
+            }
+        } else if ("expose card".equals(command)) {
+            //CorpCard ice = getIceCard(corp, false);
+            ImageIcon icon = new ImageIcon("img\\" +  ((CorpCard) card).getActualName() + ".png");
+            JOptionPane.showMessageDialog(
+                        null,
+                        "",
+                        "Revealed Card", JOptionPane.INFORMATION_MESSAGE,
+                        icon);
+            System.out.println("Corp forced to expose " + ((CorpCard) card).getActualName());
+        } else if ("trash top card".equals(command)) {
+            corp.millRnD();
+            System.out.println("Corp forced to trash top card of RnD");
+        } else if ("adjust creds".equals(command)) {
+            System.out.println("How many creds?");
+            int creds = getIntFromUser("How many creds?",-10,10);
+            corp.gainCreds(creds);
+            System.out.println("Corp gains " + creds + " creds.");
+        } else if ("install program".equals(command)) {
+            corp.boardHeight = this.getContentPane().getHeight();
+            String cardName = getStringFromUser("What program?");
+            corp.addRunnerCard(cardName);
+            refreshBoard();
+        } else if ("trash program".equals(command)) {
+            corp.removeRunnerCard(card);
+        } else if ("add virus".equals(command)) {
+            RunnerCard rc = (RunnerCard) card;
+            rc.addVirusCounter();
+            System.out.println(rc.getName() + " now has " + rc.getVirusCounters() + " virus counters");
+        } else if ("play current".equals(command)) {
+            String cardName = getStringFromUser("What current?");
+            Card current = new Card();
+            current.setSide("Runner");
+            current.setName(cardName);
+            corp.setCurrent(current);
+            System.out.println("Runner plays current " + cardName);
+            //renderCorpBoard(corp);
+        } else if ("host program".equals(command)) {
+            String cardName = getStringFromUser("What program?");
+            ((CorpCard) card).setHostedCard(cardName);
+            //renderCorpBoard(corp);
+        } else if ("unhost program".equals(command)) {
+            ((CorpCard) card).setHostedCard("");
+            //renderCorpBoard(corp);
+        } else if ("help".equals(command)) {
+            System.out.println("\n****** Help Menu ******");
+            System.out.println("Servers are numbered left to right, starting with 1.");
+            System.out.println("ICE is numbered from top to bottom, starting with 1.");
+            System.out.println("Valid commands:");
+            System.out.println("rez ice");
+            System.out.println("derez ice");
+            System.out.println("trash ice");
+            System.out.println("access server");
+            System.out.println("expose asset");
+            System.out.println("expose ice");
+            System.out.println("mill RnD");
+            System.out.println("adjust creds");
+            System.out.println("install program");
+            System.out.println("trash program");
+            System.out.println("add virus");
+            System.out.println("play current");
+            System.out.println("host program");
+            System.out.println("unhost program");
+            System.out.println("end turn\n");
+        } else if ("^C".equals(command)) {
+            System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for ArrayList of valid commands.");
+        } 
+        else if (!"".equals(command)) {
+            System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for ArrayList of valid commands.");
+        }
+         updateCorpStatus();
+    }
+
+    public static int getIntFromUser(String text, int min, int max) {
+        int intFromUser = -11;
+        while (intFromUser == -11) {
+            intFromUser = getIntFromUserSafe(text, min, max);
+            if (intFromUser == -12) {
+                return -12;
+            }
         }
         return intFromUser;
     }
 
-    public static int getIntFromUserSafe(int min, int max) {
+    public static int getIntFromUserSafe(String text, int min, int max) {
         try {
-            Scanner reader = new Scanner(System.in);
-            int val = reader.nextInt();
+            //Scanner reader = new Scanner(System.in);
+            //int val = reader.nextInt();
+            int val = -11;
+            String s = (String)JOptionPane.showInputDialog(
+                    frame,
+                    text,
+                    "Input Required",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    null);
+            if (s == null) {
+                return -12;
+            }
+            val = Integer.parseInt(s);
             if (max == 0) {
                 return 0;
             }
             if (val > max || val < min) {
                 System.out.println("Incorrect input: out of range " + min + " to " + max);
-                return -1;
+                return -11;
             } else {
                 return val;
             }
         } catch (Exception e) {
             System.out.println("Incorrect input: must be integer");
         }
-        return -1;
+        return -11;
     }
 
-    public static String getStringFromUser() {
+    public static String getStringFromUser(String text) {
         try {
-            Scanner reader = new Scanner(System.in);
-            String val = reader.nextLine();
-            return val;
+            String s = (String)JOptionPane.showInputDialog(
+                    frame,
+                    text,
+                    "Input Required",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    null);
+            return s;
         } catch (Exception e) {
             System.out.println("Incorrect input");
         }
         return "";
     }
 
+    public static int getYesNoFromUser(String text) {
+        return JOptionPane.showConfirmDialog(
+            frame,
+            text,
+            "Input Required",
+            JOptionPane.YES_NO_OPTION);
+    }
+
     public static int accessCardsFromServer(Server server, int runnerPoints) {
-        List<String> preAccessAssets = CardAbility.getInstance().getPreAccessAssets();
-        List<CorpCard> serverAssets = server.getAssets();
+        ArrayList<String> preAccessAssets = CardAbility.getInstance().getPreAccessAssets();
+        ArrayList<CorpCard> serverAssets = server.getAssets();
         for (int i=serverAssets.size()-1; i<=0; i--) {
             if(serverAssets.size() > 0 && i >= 0) {
                 CorpCard c = serverAssets.get(i);
@@ -273,20 +456,19 @@ public class WebwalkerGame {
                 break;
             }
         }
-        System.out.println("Access successful?");
-        String success = getStringFromUser();
-        if ("no".equals(success) || "n".equals(success)) {
+        int success = getYesNoFromUser("Access successful?");
+        if (success == 1) {
             return 0;
         }
 
         System.out.println("How many cards?");
-        int numberAccessed = getIntFromUser(0,99);
+        int numberAccessed = getIntFromUser("How many cards?",0,99);
 
         if (!server.isRnD()) {
             Collections.shuffle(server.getAssets());
         }
-        List<CorpCard> cardsToTrash = new ArrayList<CorpCard>();
-        List<CorpCard> cardsToSteal = new ArrayList<CorpCard>();
+        ArrayList<CorpCard> cardsToTrash = new ArrayList<CorpCard>();
+        ArrayList<CorpCard> cardsToSteal = new ArrayList<CorpCard>();
         numberAccessed = (numberAccessed > serverAssets.size()) ? serverAssets.size() : numberAccessed;
         System.out.println("Accessing " + numberAccessed + " cards.");
         if (server.isArchives()) {
@@ -304,7 +486,7 @@ public class WebwalkerGame {
                 } else {
                     System.out.println("Accessing: " + card.getActualName() + ". Press enter to continue.");
                 }
-                String command = getStringFromUser();
+                String command = getStringFromUser("Access command:");
                 if ("steal".equals(command)) {
                     boolean meetsAdditionalAgendaConditions = CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server);
                     if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, server, null, true)))) {
@@ -322,6 +504,7 @@ public class WebwalkerGame {
         } else {
             for (int i=0; i<numberAccessed;i++) {
                 CorpCard card = serverAssets.get(i);
+
                 if (card.isAgenda()) {
                     System.out.println("Accessing: " + card.getActualName() + ". Steal or leave?");
                 } else if (card.isTrap(server.getName())) {
@@ -336,7 +519,17 @@ public class WebwalkerGame {
                 } else {
                     System.out.println("Accessing: " + card.getActualName() + ". Leave or trash with special ability?");
                 }
-                String command = getStringFromUser();
+                ImageIcon icon = new ImageIcon("img\\" +  ((CorpCard) card).getActualName() + ".png");
+                Object[] possibilities = {"steal", "trash", "continue", "jack out"};
+                String command = (String)JOptionPane.showInputDialog(
+                    frame,
+                    null,
+                    "Accessed Card",
+                    JOptionPane.PLAIN_MESSAGE,
+                    icon,
+                    possibilities,
+                    "continue");
+                //String command = getStringFromUser("Access command");
                 if ("trash".equals(command)) {
                     cardsToTrash.add(card);
                 } else if ("steal".equals(command)) {
@@ -367,10 +560,10 @@ public class WebwalkerGame {
 
     public static CorpCard getIceCard(Corp corp, boolean trash) {
         System.out.println("Which server?");
-        int serverNumber = getIntFromUser(1, corp.getServers().size());
+        int serverNumber = getIntFromUser("Which server?", 1, corp.getServers().size());
         Server server = corp.getServers().get(serverNumber-1);
         System.out.println("Which position?");
-        int iceNumber = getIntFromUser(1, server.getIce().size());
+        int iceNumber = getIntFromUser("Which position?",1, server.getIce().size());
         if (server != null && iceNumber != 0) {
             CorpCard ice = server.getIce().get(iceNumber-1);
             if (trash) {
@@ -385,8 +578,8 @@ public class WebwalkerGame {
     }
 
     public static void renderCorpBoard(Corp corp) {
-        int columnWidth = 12;
 
+        int columnWidth = 12;
         //Render Board
         String serverNumberLayer = "|| ";
         int maxAssetLayer = 0;
@@ -404,6 +597,7 @@ public class WebwalkerGame {
         for (Server server : corp.getServers()) {
             i++;
             String name = server.getName();
+            
             /*
             if (server.getAsset() != null) {
                 CorpCard asset = server.getAsset();
@@ -415,8 +609,8 @@ public class WebwalkerGame {
 
 */
 
-            List<CorpCard> ice = server.getIce();
-            List<CorpCard> assets = null;
+            ArrayList<CorpCard> ice = server.getIce();
+            ArrayList<CorpCard> assets = null;
 
             if (server.isRemote()) {
                 assets = server.getAssets();
@@ -498,11 +692,11 @@ public class WebwalkerGame {
         System.out.println(padToN(displayCreds, dividerLayer.length() - 2) + "||"); 
         System.out.println(padToN(clicks, dividerLayer.length() - 2) + "||"); 
         System.out.println(padToN(handSize, dividerLayer.length() - 2) + "||"); 
-        List<CorpCard> hq = corp.getHQ().getAssets();
+        ArrayList<CorpCard> hq = corp.getHQ().getAssets();
         for (CorpCard card : hq) {
             debugPrint((padToN("|| Card : " + card.getActualName(), dividerLayer.length() - 2) + "||")); 
         }
-        List<Server> servers = corp.getWeakServers();
+        ArrayList<Server> servers = corp.getWeakServers();
         for (Server server : servers) {
             debugPrint((padToN("|| Weak Server : " + server.getName(), dividerLayer.length() - 2) + "||")); 
         }
@@ -532,11 +726,12 @@ public class WebwalkerGame {
         return s;
     }
     public static boolean verifyIdentity(String identity) {
-        List<String> identities = Arrays.asList("Haas-Bioroid: Engineering the Future","Haas-Bioroid: Stronger Together","Jinteki - Replicating Perfection","Other Jinteki");
+        ArrayList<String> identities =  new ArrayList<String>();
+        identities.addAll(Arrays.asList("Haas-Bioroid: Engineering the Future","Haas-Bioroid: Stronger Together","Jinteki - Replicating Perfection","Other Jinteki"));
         return identities.contains(identity);
     }
-    public static Map<String, List<CorpCard>> buildDeck(String corpDeckFilename) {
-        List<CorpCard> deck = new ArrayList<CorpCard>();
+    public static Map<String, ArrayList<CorpCard>> buildDeck(String corpDeckFilename) {
+        ArrayList<CorpCard> deck = new ArrayList<CorpCard>();
         String identity = null;
         try {
             BufferedReader in = new BufferedReader(new FileReader(corpDeckFilename));
@@ -550,9 +745,7 @@ public class WebwalkerGame {
                 String[] parts = str.split(",");
                 int quantity = Integer.parseInt(parts[0]);
                 for (int i=0;i<quantity;i++) {
-                    CorpCard card = new CorpCard();
-                    card.setType(parts[5]);
-                    card.setName(parts[1]);
+                    CorpCard card = new CorpCard(parts[1], parts[5]);
                     card.setCost(Integer.parseInt(parts[2]));
                     if (card.isIce()) {
                         card.setSubroutines(Integer.parseInt(parts[3]));
@@ -570,9 +763,9 @@ public class WebwalkerGame {
             }
             in.close();
         } catch (Exception e) {
-            System.out.println("debug error building deck: " + e.getMessage());
+            System.out.println("debug error building deck: " + e + " " + e.getMessage());
         }
-        Map<String, List<CorpCard>> identityMap = new HashMap<String, List<CorpCard>>();
+        Map<String, ArrayList<CorpCard>> identityMap = new HashMap<String, ArrayList<CorpCard>>();
         identityMap.put(identity, deck);
         return identityMap;
     }
@@ -583,7 +776,7 @@ public class WebwalkerGame {
         }
     }
 
-    public static CorpCard getCardByName(List<CorpCard> cardList, String s) {
+    public static CorpCard getCardByName(ArrayList<CorpCard> cardList, String s) {
         for (CorpCard c : cardList) {
             if (s.equals(c.getActualName())) {
                 return c;
@@ -592,4 +785,160 @@ public class WebwalkerGame {
         return null;
     }
 
+        public class CardZoomer implements MouseListener{
+            Corp corp = null;
+            Server server = null;
+            public CardZoomer(Corp corp) {
+                this.corp = corp;
+            }
+            public void mouseClicked(MouseEvent e){
+
+                /*
+                for (int i=0; i<newSong.numStrings(); i++){
+                    tuners[i] = x;
+                    x+=100;
+                }
+                for (int i=0; i<newSong.numStrings(); i++){
+                    if (e.getX() < tuners[i]+10 && e.getX() > tuners[i]-10 && e.getY() < 585 && e.getY() > 565){
+                        newSong.setTuning(newSong.numStrings()-1 - i, -1); //1 is uptune, -1 is downtune
+                        newSong.repaint();
+                    }
+                    else if (e.getX() < tuners[i]+10 && e.getX() > tuners[i]-10 && e.getY() < 525 && e.getY() > 510){
+                        newSong.setTuning(newSong.numStrings()-1 - i, 1); //1 is uptune, -1 is downtune
+                        newSong.repaint();
+                    }
+                }
+                */
+            }
+            private void doPop(MouseEvent e){
+                Card card = corp.getCardFromCoord(e.getX(), e.getY());
+                RunnerContextMenu menu = new RunnerContextMenu(card);
+                if (runnerTurn) {
+                    menu.show(e.getComponent(), e.getX(), e.getY());
+                }
+                refreshBoard();
+            }
+            public void mousePressed(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    menuShowing = true;
+                    doPop(e);
+                }
+                if(e.getButton() == MouseEvent.BUTTON1 && !menuShowing) {
+                    int xCoord = e.getX();
+                    int yCoord = e.getY();
+                    int serverNumber = (e.getX()-30) / 225;
+                    server = corp.getServerByNumber(serverNumber);
+                    if (server != null) {
+                        server.toggleZoom(xCoord, yCoord, true);
+                    }
+                    for (RunnerCard rc : corp.getRunnerCards()) {
+                        rc.checkClickLocation(xCoord, yCoord, true);
+                    }
+                    refreshBoard();
+                }
+                menuShowing = false;
+            }
+            public void mouseReleased(MouseEvent e) {
+                if (e.isPopupTrigger()) {
+                    menuShowing = true;
+                    doPop(e);
+                }
+                if(e.getButton() == MouseEvent.BUTTON1 && !menuShowing) {
+                    int xCoord = e.getX();
+                    int yCoord = e.getY();
+                    if (server != null) {
+                        server.toggleZoom(xCoord, yCoord, true);
+                    }
+                    for (RunnerCard rc : corp.getRunnerCards()) {
+                        rc.checkClickLocation(xCoord, yCoord, true);
+                    }
+                    refreshBoard();
+                    server = null;
+                }
+            }
+            public void mouseEntered(MouseEvent e) {};
+            public void mouseExited(MouseEvent e) {};
+    }
+    public class RunnerContextMenu extends JPopupMenu {
+    JMenuItem trashIceItem;
+    JMenuItem endTurnItem;
+    JMenuItem playCurrentItem;
+    JMenuItem rezIceItem;
+    JMenuItem derezIceItem;
+    JMenuItem exposeCardItem;
+    JMenuItem installProgramItem;
+    JMenuItem trashProgramItem;
+    JMenuItem trashTopCardItem;
+    JMenuItem adjustCredsItem;
+    JMenuItem addVirusItem;
+    JMenuItem accessServerItem;
+        public RunnerContextMenu(Card card){
+            trashIceItem = new JMenuItem("trash ice");
+            endTurnItem = new JMenuItem("end turn");
+            playCurrentItem = new JMenuItem("play current");
+            rezIceItem = new JMenuItem("rez ice");
+            derezIceItem = new JMenuItem("derez ice");
+            exposeCardItem = new JMenuItem("expose card");
+            installProgramItem = new JMenuItem("install program");
+            trashProgramItem = new JMenuItem("trash program");
+            trashTopCardItem = new JMenuItem("trash top card");
+            adjustCredsItem = new JMenuItem("adjust creds");
+            addVirusItem = new JMenuItem("add virus");
+            accessServerItem = new JMenuItem("access server");
+            trashIceItem.addActionListener(new MenuActionListener(card));
+            endTurnItem.addActionListener(new MenuActionListener(card));
+            playCurrentItem.addActionListener(new MenuActionListener(card));
+            rezIceItem.addActionListener(new MenuActionListener(card));
+            derezIceItem.addActionListener(new MenuActionListener(card));
+            exposeCardItem.addActionListener(new MenuActionListener(card));
+            installProgramItem.addActionListener(new MenuActionListener(card));
+            trashProgramItem.addActionListener(new MenuActionListener(card));
+            trashTopCardItem.addActionListener(new MenuActionListener(card));
+            adjustCredsItem.addActionListener(new MenuActionListener(card));
+            addVirusItem.addActionListener(new MenuActionListener(card));
+            accessServerItem.addActionListener(new MenuActionListener(card));
+            if (card == null) {
+                add(playCurrentItem);
+                add(installProgramItem);
+                add(adjustCredsItem);
+            }
+            if (card != null && card.getType().isEmpty()) {
+                add(addVirusItem);
+                add(trashProgramItem);
+            } else {
+                if (card != null && "RnD".equals(((CorpCard)card).getActualName())) {
+                    add(trashTopCardItem);
+                }
+                if (card != null && ((CorpCard)card).isIce()) {
+                    add(trashIceItem);
+                    if (((CorpCard)card).isRezzed()) {
+                        add(derezIceItem);
+                    } else {
+                        add(rezIceItem);
+                    }
+                } 
+                if (card != null && !((CorpCard)card).isIce()) {
+                    add(accessServerItem);
+                }
+                if (card != null && !"RnD".equals(((CorpCard)card).getActualName()) && !"HQ".equals(((CorpCard)card).getActualName()) && !"Archives".equals(((CorpCard)card).getActualName())) {
+                    add(exposeCardItem);
+                }
+            }
+            add(endTurnItem);
+        }
+    }
+    public class MenuActionListener implements ActionListener {
+        Card card = null;
+        public MenuActionListener (Card card) {
+            this.card = card;
+        }
+        public void actionPerformed(ActionEvent e) {
+            executeCommand(e.getActionCommand(), card);
+        }
+    }
+
+    public void refreshBoard() {
+        corp.boardHeight = this.getContentPane().getHeight();
+        corp.repaint();
+    }
 }

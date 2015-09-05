@@ -1,20 +1,32 @@
 import java.util.*;
+import javax.swing.*;
 
 public class CardAbility {
-    private static List<String> cardsForClickThree = Arrays.asList("Melange Mining Corp","Eliza's Toybox");
-    private static List<String> preTurnAssets = Arrays.asList("Adonis Campaign","Pad Campaign","Mental Health Clinic");
-    private static List<String> preAgendaCards = Arrays.asList("Trick of Light","Bioroid Efficiency Research");
-    private static List<String> preAccessAssets = Arrays.asList("Caprice Nisei","Jackson Howard");
-    private static List<String> hostedCardsToTrash = Arrays.asList("Rook","Knight","Bishop");
-    private static List<String> conditionalAgendas = Arrays.asList("NAPD Contract","The Future Perfect");
-    private static List<String> agendaConditionCards = Arrays.asList("Strongbox");
-    private static List<String> doubleOperations = Arrays.asList("Celebrity Gift");
-    private static List<String> moneyCards = Arrays.asList("Hedge Fund","Celebrity Gift","Mental Health Clinic","Sundew");
-    private static List<String> moneyAssets = Arrays.asList("");
+    private static ArrayList<String> cardsForClickThree = new ArrayList<String>();
+    private static ArrayList<String> preTurnAssets = new ArrayList<String>();
+    private static ArrayList<String> preAgendaCards = new ArrayList<String>();
+    private static ArrayList<String> preAccessAssets  = new ArrayList<String>();
+    private static ArrayList<String> hostedCardsToTrash = new ArrayList<String>();
+    private static ArrayList<String> conditionalAgendas  = new ArrayList<String>();
+    private static ArrayList<String> agendaConditionCards = new ArrayList<String>();
+    private static ArrayList<String> doubleOperations = new ArrayList<String>();
+    private static ArrayList<String> moneyCards = new ArrayList<String>();
+    private static ArrayList<String> moneyAssets = new ArrayList<String>();
     private static CardAbility instance = null;
     private boolean debugMode = false;
+    private static JFrame frame;
 
     public CardAbility() {
+        cardsForClickThree.addAll(Arrays.asList("Melange Mining Corp","Eliza's Toybox"));
+        preTurnAssets.addAll(Arrays.asList("Adonis Campaign","Pad Campaign","Mental Health Clinic"));
+        preAgendaCards.addAll(Arrays.asList("Trick of Light","Bioroid Efficiency Research"));
+        preAccessAssets.addAll(Arrays.asList("Caprice Nisei","Jackson Howard"));
+        hostedCardsToTrash.addAll(Arrays.asList("Rook","Knight","Bishop"));
+        conditionalAgendas.addAll(Arrays.asList("NAPD Contract","The Future Perfect"));
+        agendaConditionCards.addAll(Arrays.asList("Strongbox"));
+        doubleOperations.addAll(Arrays.asList("Celebrity Gift"));
+        moneyCards.addAll(Arrays.asList("Hedge Fund","Celebrity Gift","Mental Health Clinic","Sundew"));
+        moneyAssets.addAll(Arrays.asList(""));
     }
 
     public static CardAbility getInstance() {
@@ -22,6 +34,10 @@ public class CardAbility {
             instance = new CardAbility();
         }
         return instance;
+    }
+
+    public void setFrame(JFrame frame) {
+        this.frame = frame;
     }
 
     public boolean activate(CorpCard card, Corp corp) {
@@ -93,11 +109,8 @@ public class CardAbility {
             return true;
         }
         if ("Caprice Nisei".equals(card.getName())) {
-            System.out.println(card.getName() + " triggers: let's play a game");
-            System.out.println("How many credits are you playing with? (0, 1, or 2)");
-            int runnerCreds = getIntFromUser(0,2);
-            System.out.println("How many credits did you spend?");
-            int runnerSpent = getIntFromUser(0,2);
+            int runnerCreds = getIntFromUser(card.getName() + " triggers: let's play a game\nHow many credits are you playing with? (0, 1, or 2)",0,2);
+            int runnerSpent = getIntFromUser("How many credits did you spend?",0,2);
             if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
                 System.out.println("Corp spends 2 credits");
                 corp.spendCreds(2);
@@ -159,10 +172,9 @@ public class CardAbility {
         }
         if ("NAPD Contract".equals(card.getActualName())) {
             if (accessFromRunner) {
-                System.out.println("Runner must pay an additional 4 credits to steal " + card.getActualName());
-                System.out.println("Did runner pay credits?");
-                String paidCreds = getStringFromUser();
-                return paidCreds != null && ("yes".equals(paidCreds) || "y".equals(paidCreds));
+                System.out.println("hey accessing");
+                int paidCreds = getYesNoFromUser("Runner must pay an additional 4 credits to steal " + card.getActualName() + "\nDid runner pay credits?");
+                return paidCreds == 1;
             } else {
                 return true;
             }
@@ -175,7 +187,7 @@ public class CardAbility {
                 }
             }
             for (Server s : corp.getServers()) {
-                List<CorpCard> iceList = s.getIce();
+                ArrayList<CorpCard> iceList = s.getIce();
                 for  (CorpCard c : iceList) {
                     if (ice == null || (ice.getCost() < c.getCost() && !c.isRezzed())) {
                         ice = c;
@@ -200,11 +212,8 @@ public class CardAbility {
         }
         if ("The Future Perfect".equals(card.getActualName())) {
             if (accessFromRunner && (server == null || !server.isRemote())) {
-                System.out.println(card.getName() + " triggers: let's play a game");
-                System.out.println("How many credits are you playing with? (0, 1, or 2)");
-                int runnerCreds = getIntFromUser(0,2);
-                System.out.println("How many credits did you spend?");
-                int runnerSpent = getIntFromUser(0,2);
+                int runnerCreds = getIntFromUser(card.getName() + " triggers: let's play a game\nHow many credits are you playing with? (0, 1, or 2)",0,2);
+                int runnerSpent = getIntFromUser("How many credits did you spend?",0,2);
                 if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
                     System.out.println("Corp spends 2 credits and prevents agenda access");
                     corp.spendCreds(2);
@@ -232,8 +241,8 @@ public class CardAbility {
         }
         if ("Jackson Howard".equals(card.getName())) {
             if (corp.getClicks() == 0) {                
-                List<CorpCard> agendas = new ArrayList<CorpCard>();
-                List<CorpCard> secondary = new ArrayList<CorpCard>();
+                ArrayList<CorpCard> agendas = new ArrayList<CorpCard>();
+                ArrayList<CorpCard> secondary = new ArrayList<CorpCard>();
                 for (CorpCard c : corp.getServerByNumber(0).getAssets()) {
                     if (c.isAgenda()) {
                         agendas.add(c);
@@ -275,7 +284,7 @@ public class CardAbility {
         if ("Priority Requisition".equals(card.getName())) {
             CorpCard ice = null;
             for (Server s : corp.getServers()) {
-                List<CorpCard> iceList = s.getIce();
+                ArrayList<CorpCard> iceList = s.getIce();
                 for  (CorpCard c : iceList) {
                     if (ice == null || (ice.getCost() < c.getCost() && !c.isRezzed())) {
                         ice = c;
@@ -316,8 +325,8 @@ public class CardAbility {
             return true;
         }
         if ("Nisei MK II".equals(card.getName())) {
-            System.out.println("Nisei MK II gets three agenda counters");
-            card.setCounters(3);
+            System.out.println("Nisei MK II gets an agenda counter");
+            card.setCounters(1);
             return true;
         }
         if ("Trick of Light".equals(card.getName())) {
@@ -331,36 +340,34 @@ public class CardAbility {
             return true;
         }
         if ("Strongbox".equals(card.getActualName())) {   
-            System.out.println(card.getActualName() + " requires runner must pay an additional click to steal agenda in this server");
-            System.out.println("Did runner pay click?");
-            String paidCreds = getStringFromUser();
-            return paidCreds != null && ("yes".equals(paidCreds) || "y".equals(paidCreds));
+            int paidCreds = getYesNoFromUser(card.getActualName() + " requires runner must pay an additional click to\nsteal agenda in this server.\nDid runner pay click?");
+            return paidCreds == 1;
         }
         return false;
     }
 
-    public List<String> getCardsForClickNumber(int click) {
+    public ArrayList<String> getCardsForClickNumber(int click) {
         if (click == 3) {
             return cardsForClickThree;
         }
         return null;
     }
-    public List<String> getPreTurnAssets() {
+    public ArrayList<String> getPreTurnAssets() {
         return preTurnAssets;
     }
-    public List<String> getPreAgendaCards() {
+    public ArrayList<String> getPreAgendaCards() {
         return preAgendaCards;
     }
-    public List<String> getPreAccessAssets() {
+    public ArrayList<String> getPreAccessAssets() {
         return preAccessAssets;
     }
-    public List<String> getMoneyCards() {
+    public ArrayList<String> getMoneyCards() {
         return moneyCards;
     }
-    public List<String> getHostedCardsToTrash() {
+    public ArrayList<String> getHostedCardsToTrash() {
         return hostedCardsToTrash;
     }
-    public List<String> getConditionalAgendas() {
+    public ArrayList<String> getConditionalAgendas() {
         return conditionalAgendas;
     }
 // Card specific evaluation functions
@@ -492,27 +499,59 @@ public class CardAbility {
         return true;
     }
 
-    public static String getStringFromUser() {
+    public static int getYesNoFromUser(String text) {
+        return JOptionPane.showConfirmDialog(
+            frame,
+            text,
+            "Input Required",
+            JOptionPane.YES_NO_OPTION);
+    }
+
+    public static String getStringFromUser(String text) {
         try {
-            Scanner reader = new Scanner(System.in);
-            String val = reader.nextLine();
-            return val;
+            String s = (String)JOptionPane.showInputDialog(
+                    frame,
+                    text,
+                    "Input Required",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    null);
+            return s;
         } catch (Exception e) {
             System.out.println("Incorrect input");
         }
         return "";
     }
-    public static int getIntFromUser(int min, int max) {
+
+    public static int getIntFromUser(String text, int min, int max) {
         int intFromUser = -1;
         while (intFromUser == -1) {
-            intFromUser = getIntFromUserSafe(min, max);
+            intFromUser = getIntFromUserSafe(text, min, max);
+            if (intFromUser == -2) {
+                return -2;
+            }
         }
         return intFromUser;
     }
-    public static int getIntFromUserSafe(int min, int max) {
+
+    public static int getIntFromUserSafe(String text, int min, int max) {
         try {
-            Scanner reader = new Scanner(System.in);
-            int val = reader.nextInt();
+            //Scanner reader = new Scanner(System.in);
+            //int val = reader.nextInt();
+            int val = -1;
+            String s = (String)JOptionPane.showInputDialog(
+                    frame,
+                    text,
+                    "Input Required",
+                    JOptionPane.PLAIN_MESSAGE,
+                    null,
+                    null,
+                    null);
+            if (s == null) {
+                return -2;
+            }
+            val = Integer.parseInt(s);
             if (max == 0) {
                 return 0;
             }
