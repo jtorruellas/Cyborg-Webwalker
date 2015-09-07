@@ -222,7 +222,7 @@ public class WebwalkerGame extends JFrame  {
                 // Tell Java to use your special stream
                 System.setOut(ps);
                 try {
-                    Thread.sleep(100);
+                    Thread.sleep(1000);
                 } 
                 catch (InterruptedException e) {
                 }
@@ -342,6 +342,7 @@ public class WebwalkerGame extends JFrame  {
             System.out.println("Corp gains " + creds + " creds.");
         } else if ("install program".equals(command)) {
             corp.boardHeight = this.getContentPane().getHeight();
+            corp.boardWidth = this.getContentPane().getWidth();
             String cardName = getStringFromUser("What program?");
             corp.addRunnerCard(cardName);
             refreshBoard();
@@ -991,6 +992,7 @@ public class WebwalkerGame extends JFrame  {
     */
     public void refreshBoard() {
         corp.boardHeight = this.getContentPane().getHeight();
+        corp.boardWidth = this.getContentPane().getWidth();
         corp.repaint();
     }
 }

@@ -53,6 +53,7 @@ public class Corp extends JComponent{
     private Card current = null;
 
     public int boardHeight = 800;
+    public int boardWidth = 1600;
 
 
     // ===========================================================Initialize Corp
@@ -270,6 +271,9 @@ public class Corp extends JComponent{
                         }
                     }
                 } else if (card.isAsset()) {
+                    if (card.getName().equals(server.getAsset().getName())) {
+                        return false;
+                    }
                     for (CorpCard c : s.getAssets()) {
                         if (c.getName().equals(card.getName())) {
                             return false;
@@ -494,10 +498,8 @@ public class Corp extends JComponent{
     }
     public void addRunnerCard(String cardName) {
         RunnerCard runnerCard = new RunnerCard(cardName);
-        //System.out.println("hey setXCoord " + (30+(runnerCards.size()*175)));
-        //System.out.println("hey setYCoord " + (boardHeight-209));
-        runnerCard.setXCoord(30+(runnerCards.size()*175));
-        runnerCard.setYCoord(boardHeight-209);
+        runnerCard.setXCoord(30+(runnerCards.size()*125));
+        runnerCard.setYCoord(boardHeight-250);
         runnerCards.put(cardName, runnerCard);
         System.out.println("Runner installs " + cardName);
 
@@ -790,6 +792,7 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
                 if (!operationCorpCards.isEmpty()) {
                     CorpCard bestOperation = getBestOperation(operationCorpCards);
                     if (bestOperation != null && playOperation(bestOperation)) {
+                        debugPrint("debug 1");
                         return true;
                     }
                 }
@@ -802,6 +805,7 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
                             openServer = getBestOpenServer();
                             if (openServer != null) {
                                 openServer.reserveForAgenda();
+                                debugPrint("debug 2");
                                 return true;
                             } else {
                                 System.out.println("ERROR - just created server, should be available");
@@ -812,13 +816,16 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
                         CorpCard bestIce = getBestIce(iceCorpCards, openServer, "Agenda");
                         if (bestIce != null && installCard(openServer, bestIce)) {
                             openServer.reserveForAgenda();
+                            debugPrint("debug 3");
                             return true;
                         }
                     }
                     if (openServer != null && isSuitableForAgenda(openServer) && installCard(openServer, bestAgenda)) {
+                        debugPrint("debug 4");
                         return true;
                     }
                     if (openServer != null && agendaCorpCards.size() > 2 && openServer.getIce().size() > 0 && installCard(openServer, bestAgenda)) {
+                        debugPrint("debug 5");
                         return true;
                     } 
                 }
@@ -826,14 +833,17 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
                 if (!assetCorpCards.isEmpty()) {
                     CorpCard bestAsset = getBestAsset(assetCorpCards);
                     if (openServer != null && !openServer.reservedForAgenda() && bestAsset != null && assetNeedsIce(bestAsset) && installCard(openServer, bestAsset)) {
+                        debugPrint("debug 6");
                         return true;
                     } else if (assetNeedsIce(bestAsset) && !iceCorpCards.isEmpty() && weakServers.isEmpty()) {
                         CorpCard bestIce = getBestIce(iceCorpCards, null, "Asset");
                         if (bestIce != null && createServer(bestIce)) {
+                            debugPrint("debug 7");
                             return true;
                         }
                     } else if (!assetNeedsIce(bestAsset)) { 
                         if (createServer(bestAsset)) {
+                            debugPrint("debug 8");
                             return true;
                         }
                     }
@@ -852,6 +862,7 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
                 CorpCard bestIce = getBestIce(iceCorpCards, weakServer, weakServer.getName());
                 if (bestIce != null && installCard(weakServer, bestIce)) {
                     serversAccessed.remove(weakServer);
+                    debugPrint("debug 9");
                     return true;
                 }
             }
@@ -939,8 +950,12 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
         for (int i = c_servers.size()-1; i >= 0; i--) {
             c_servers.get(i).refreshCards(g);
         }
+        int i = 0;
+        g.setColor(Color.DARK_GRAY);
+        g.fillRect(100, boardHeight-280, boardWidth-500, 2);
         for (RunnerCard c : runnerCards.values()) {
-            c.setXCoord(30+((runnerCards.size()-1)*175));
+            c.setXCoord(30+(i*125));
+            i++;
             c.setYCoord(boardHeight-250);
             c.draw(g);
         }

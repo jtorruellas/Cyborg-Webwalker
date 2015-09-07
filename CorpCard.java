@@ -78,11 +78,17 @@ public class CorpCard extends Card
         //super.paintComponent(g);
         int advancementX = (xCoord+smallImage.getWidth()/2);
         int advancementY = (yCoord+smallImage.getHeight()/2);
+        int tokenWidth = 40;
+        int fontSize = 32;
+        int fontAdjustment = 11;
         if (smallImage != null && !zoomedImage) {
             g.drawImage(smallImage, xCoord, yCoord, null);
         } else if (bigImage != null && zoomedImage) {
             advancementX = (xCoord+bigImage.getWidth()/2);
             advancementY = (yCoord+bigImage.getHeight()/2);
+            tokenWidth = tokenWidth * 3;
+            fontSize = fontSize * 3;
+            fontAdjustment = fontAdjustment * 3;
             if (isIce()) {
                 double rotationRequired = Math.toRadians (-90);
                 AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, (bigImage.getWidth()), (bigImage.getHeight()));
@@ -94,10 +100,10 @@ public class CorpCard extends Card
         }
         if (advancement > 0) {
             g.setColor(Color.white);
-            g.fillOval(advancementX-20, advancementY-20, 40, 40);
+            g.fillOval(advancementX-(tokenWidth/2), advancementY-(tokenWidth/2), tokenWidth, tokenWidth);
             g.setColor(Color.black);
-            g.setFont(new Font("OCR A Extended", Font.BOLD, 32));
-            g.drawString(advancement + "", advancementX-11, advancementY+11);
+            g.setFont(new Font("OCR A Extended", Font.BOLD, fontSize));
+            g.drawString(advancement + "", advancementX-fontAdjustment, advancementY+fontAdjustment);
             //System.out.println("hey printed adv");
         }
     }

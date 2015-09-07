@@ -59,19 +59,25 @@ public class RunnerCard extends Card {
     public void draw (Graphics g){
         int virusX = (xCoord+smallImage.getWidth()/2);
         int virusY = (yCoord+smallImage.getHeight()/2);
+        int tokenWidth = 40;
+        int fontSize = 32;
+        int fontAdjustment = 11;
         if (smallImage != null && !zoomedImage) {
             g.drawImage(smallImage, xCoord, yCoord, null);
         } else if (bigImage != null && zoomedImage) {
             virusX = (xCoord+bigImage.getWidth()/2);
             virusY = (yCoord-270+bigImage.getHeight()/2);
+            tokenWidth = tokenWidth * 3;
+            fontSize = fontSize * 3;
+            fontAdjustment = fontAdjustment * 3;
             g.drawImage(bigImage, xCoord, yCoord-270, null);
         }
         if (virusCounters > 0) {
             g.setColor(Color.red);
-            g.fillOval(virusX-20, virusY-20, 40, 40);
+            g.fillOval(virusX-(tokenWidth/2), virusY-(tokenWidth/2), tokenWidth, tokenWidth);
             g.setColor(Color.black);
-            g.setFont(new Font("OCR A Extended", Font.BOLD, 32));
-            g.drawString(virusCounters + "", virusX-11, virusY+11);
+            g.setFont(new Font("OCR A Extended", Font.BOLD, fontSize));
+            g.drawString(virusCounters + "", virusX-fontAdjustment, virusY+fontAdjustment);
             //System.out.println("hey printed adv");
         }
     }
