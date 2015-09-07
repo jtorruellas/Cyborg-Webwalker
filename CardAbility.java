@@ -172,9 +172,8 @@ public class CardAbility {
         }
         if ("NAPD Contract".equals(card.getActualName())) {
             if (accessFromRunner) {
-                System.out.println("hey accessing");
                 int paidCreds = getYesNoFromUser("Runner must pay an additional 4 credits to steal " + card.getActualName() + "\nDid runner pay credits?");
-                return paidCreds == 1;
+                return paidCreds == 0;
             } else {
                 return true;
             }
@@ -215,11 +214,11 @@ public class CardAbility {
                 int runnerCreds = getIntFromUser(card.getName() + " triggers: let's play a game\nHow many credits are you playing with? (0, 1, or 2)",0,2);
                 int runnerSpent = getIntFromUser("How many credits did you spend?",0,2);
                 if (runnerCreds == 1 && corp.getDisplayCreds() >= 2) {
-                    System.out.println("Corp spends 2 credits and prevents agenda access");
+                    JOptionPane.showMessageDialog(frame, "Corp spends 2 credits and prevents agenda access.");
                     corp.spendCreds(2);
                     return false;
                 } else if (runnerCreds == 0 && corp.getDisplayCreds() >= 1) {
-                    System.out.println("Corp spends 1 credit and prevents agenda access");
+                    JOptionPane.showMessageDialog(frame, "Corp spends 1 credit and prevents agenda access.");
                     corp.spendCreds(1);
                     return false;
                 } else {
@@ -227,12 +226,16 @@ public class CardAbility {
                     int creds = (corp.getDisplayCreds() >= 2) ? 2 : corp.getDisplayCreds();
                     int value = rand.nextInt(creds+1); 
                     corp.spendCreds(value);
-                    System.out.println("Corp spends "+ value + " credits");
+                    String resultString = "Corp spends "+ value + " credits.";
                     if (runnerSpent != value) {
-                        System.out.println("Corp wins and prevents agenda access");
+                        resultString = resultString + ("\nCorp wins and prevents agenda access.");
+                        System.out.println("Runner prevented from stealing " + card.getActualName());
+                        JOptionPane.showMessageDialog(frame, resultString);
                         return false;
                     } else {
-                        System.out.println("Corp loses and agenda is stolen");
+                        resultString = resultString + ("\nCorp loses and agenda is stolen.");
+                        System.out.println("Runner steals " + card.getActualName());
+                        JOptionPane.showMessageDialog(frame, resultString);
                         return true;
                     }
                 }
@@ -340,8 +343,10 @@ public class CardAbility {
             return true;
         }
         if ("Strongbox".equals(card.getActualName())) {   
-            int paidCreds = getYesNoFromUser(card.getActualName() + " requires runner must pay an additional click to\nsteal agenda in this server.\nDid runner pay click?");
-            return paidCreds == 1;
+            if (card.isRezzed()) {
+                int paidCreds = getYesNoFromUser(card.getActualName() + " requires runner must pay an additional click to\nsteal agenda in this server.\nDid runner pay click?");
+                return paidCreds == 0;
+            }
         }
         return false;
     }
@@ -491,7 +496,7 @@ public class CardAbility {
     public boolean meetsAdditionalAgendaConditions(Corp corp, Server server) {
         for (CorpCard card : server.getAssets()) {
             if (agendaConditionCards.contains(card.getActualName())) {
-                if (!activate(card, corp)) {
+                if (card.isRezzed() && !activate(card, corp)) {
                     return false;
                 }
             }

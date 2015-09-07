@@ -22,6 +22,9 @@ public class WebwalkerGame extends JFrame  {
     public JLabel clicksLabel;
     public JLabel hqLabel;
     public JLabel currentLabel;
+    private static final Font SERIF_FONT = new Font("serif", Font.PLAIN, 24);
+    //public static final Font smallFont = new Font("serif", Font.PLAIN, 20);
+    //public static final Font bigFont = new Font("serif", Font.PLAIN, 30);
 
     public static void main (String [] args) throws IOException {
 
@@ -38,44 +41,61 @@ public class WebwalkerGame extends JFrame  {
         setDefaultCloseOperation (EXIT_ON_CLOSE);
         final Container content = getContentPane();
         content.setLayout (new BorderLayout());
-        JPanel topPanel = new JPanel ();
+        JPanel bottomPanel = new JPanel ();
         JPanel leftPanel = new JPanel ();
         JPanel rightPanel = new JPanel ();
-        JPanel bottomPanel = new JPanel ();
+        JPanel topPanel = new JPanel ();
         content.add (rightPanel, BorderLayout.EAST);
-        content.add (bottomPanel, BorderLayout.SOUTH);
         content.add (topPanel, BorderLayout.NORTH);
+        content.add (bottomPanel, BorderLayout.SOUTH);
         content.add (leftPanel, BorderLayout.WEST);
         //rightPanel.setBorder (new LineBorder(Color.BLACK, 2));
         leftPanel.setPreferredSize(new Dimension(20, 2000));
-        topPanel.setPreferredSize(new Dimension(2000, 30));
+        bottomPanel.setPreferredSize(new Dimension(2000, 30));
         rightPanel.setPreferredSize(new Dimension(300, 2000));
         rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.PAGE_AXIS));
-        
-        //bottomPanel.setBorder (new LineBorder(Color.BLACK, 2));
-        bottomPanel.setLayout (new FlowLayout());
-        
-        creditsLabel = new JLabel("Credits: 5               ");
-        creditsLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
-        bottomPanel.add(creditsLabel);
-        clicksLabel = new JLabel("Clicks: 3               ");
-        clicksLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
-        bottomPanel.add(clicksLabel);
-        hqLabel = new JLabel("HQ: 5/5               ");
-        hqLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
-        bottomPanel.add(hqLabel);
+        Font bigFont = null;
+        Font smallFont = null;
+        try {
+            bigFont = Font.createFont(Font.TRUETYPE_FONT, new File("img\\font.ttf"));
+            bigFont = bigFont.deriveFont(Font.PLAIN,30);
+            smallFont = Font.createFont(Font.TRUETYPE_FONT, new File("img\\font.ttf"));
+            smallFont = smallFont.deriveFont(Font.PLAIN,15);
+            GraphicsEnvironment ge =
+                GraphicsEnvironment.getLocalGraphicsEnvironment();
+            ge.registerFont(bigFont);
+            ge.registerFont(smallFont);
+        } catch (Exception e) {
+
+        }
+       
+        //topPanel.setBorder (new LineBorder(Color.BLACK, 2));
+        topPanel.setLayout (new FlowLayout());
+
+        creditsLabel = new JLabel("***Corp Stats***      ");
+        creditsLabel.setFont(bigFont);
+        topPanel.add(creditsLabel);
+        creditsLabel = new JLabel("Credits: 5      ");
+        creditsLabel.setFont(bigFont);
+        topPanel.add(creditsLabel);
+        clicksLabel = new JLabel("Clicks: 3      ");
+        clicksLabel.setFont(bigFont);
+        topPanel.add(clicksLabel);
+        hqLabel = new JLabel("HQ: 5/5      ");
+        hqLabel.setFont(bigFont);
+        topPanel.add(hqLabel);
         currentLabel = new JLabel("Current: None");
-        currentLabel.setFont(new Font("Agency FB", Font.BOLD, 32));
-        bottomPanel.add(currentLabel);
+        currentLabel.setFont(bigFont);
+        topPanel.add(currentLabel);
         JTextArea statusLabel = new JTextArea (status);
         statusLabel.setMargin(new Insets(5,5,5,5));
         statusLabel.setEditable(false);
-        statusLabel.setFont(new Font("Agency FB", Font.BOLD, 20));
-        bottomPanel.setBackground(Color.LIGHT_GRAY);
-        bottomPanel.setForeground(Color.DARK_GRAY);
+        statusLabel.setFont(smallFont);
+        topPanel.setBackground(Color.LIGHT_GRAY);
+        topPanel.setForeground(Color.DARK_GRAY);
         statusLabel.setBackground(Color.WHITE);
         statusLabel.setForeground(Color.BLACK);
-        topPanel.setBackground(Color.LIGHT_GRAY);
+        bottomPanel.setBackground(Color.LIGHT_GRAY);
         leftPanel.setBackground(Color.LIGHT_GRAY);
 
         CardAbility.getInstance().setFrame(frame);
@@ -114,7 +134,7 @@ public class WebwalkerGame extends JFrame  {
         corp.setBorder (new LineBorder(Color.DARK_GRAY, 3));
         content.addMouseListener(new CardZoomer(corp));
         setVisible (true);
-        repaint();
+        refreshBoard();
 
         while (runnerPoints < 7 && corp.getCorpScore() < 7) {                
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -123,7 +143,7 @@ public class WebwalkerGame extends JFrame  {
             PrintStream old = System.out;
             // Tell Java to use your special stream
             System.setOut(ps);
-            status = "*** " + (turns++) + " ***\nCorp begins turn and performs mandatory draw";  
+            status = "*** " + (turns++) + " ***\nCorp begins turn and draws";  
             corp.resetClicks(corp.getMaxClicks());
             corp.preTurn();
             corp.drawCorpCards(1);
@@ -132,6 +152,7 @@ public class WebwalkerGame extends JFrame  {
             System.setOut(old);
             status =  status + "\n" + baos.toString();
             statusLabel.setText(status);
+            statusLabel.setCaretPosition(statusLabel.getCaretPosition()+statusLabel.getText().length());
             refreshBoard();
            
             while (corp.getClicks() > 0) {
@@ -161,6 +182,7 @@ public class WebwalkerGame extends JFrame  {
                     System.setOut(old);
                     status =  status + "\n" + baos.toString();
                     statusLabel.setText(status);
+                    statusLabel.setCaretPosition(statusLabel.getCaretPosition()+statusLabel.getText().length());
                     updateCorpStatus();
 
                     corp.removeClick();
@@ -171,10 +193,11 @@ public class WebwalkerGame extends JFrame  {
             }
             System.out.println("Corp ends turn");
             corp.discardDownToLimit();
-            hqLabel.setText("HQ: " + corp.getHandCount() + "/" + corp.getHandLimit() + "               ");
+            hqLabel.setText("HQ: " + corp.getHandCount() + "/" + corp.getHandLimit() + "      ");
             
             status = status + "\n\nRunner's turn begins\n";  
             statusLabel.setText(status);
+            statusLabel.setCaretPosition(statusLabel.getCaretPosition()+statusLabel.getText().length());
             runnerClicks = 3;
             //renderCorpBoard(corp);
 
@@ -209,20 +232,20 @@ public class WebwalkerGame extends JFrame  {
                     if (!baos.toString().isEmpty()) {
                         status =  status + baos.toString();
                         statusLabel.setText(status);
+                        statusLabel.setCaretPosition(statusLabel.getCaretPosition()+statusLabel.getText().length());
                     }
                     refreshBoard();
             }
             runnerTurn = false;
         }
         String winner = (runnerPoints > corp.getCorpScore()) ? "runner" : "corp";
-        System.out.println("***** The " + winner + " wins the match! *****");
-
+        JOptionPane.showMessageDialog(frame, "***** The " + winner + " wins the match! *****");
     }
 
     public void updateCorpStatus() {
-        creditsLabel.setText("Credits: " + corp.getDisplayCreds() + "               ");
-        clicksLabel.setText("Clicks: " + corp.getClicks() + "               ");
-        hqLabel.setText("HQ: " + corp.getHandCount() + "/" + corp.getHandLimit() + "               ");
+        creditsLabel.setText("Credits: " + corp.getDisplayCreds() + "      ");
+        clicksLabel.setText("Clicks: " + corp.getClicks() + "      ");
+        hqLabel.setText("HQ: " + corp.getHandCount() + "/" + corp.getHandLimit() + "      ");
 
         Card current = corp.getCurrent();
         if (current != null) {
@@ -256,7 +279,8 @@ public class WebwalkerGame extends JFrame  {
                 ice.derez();
                 corp.reserveCreds(ice.getCost());
                 //renderCorpBoard(corp);
-                System.out.println("Corp forced to derez " + ice.getName());
+                refreshBoard();
+                System.out.println("Corp forced to derez " + ice.getActualName());
             }
         }else if ("trash ice".equals(command)) {
             int yn = getYesNoFromUser("Are you sure you want\nto trash this ICE?");
@@ -289,7 +313,7 @@ public class WebwalkerGame extends JFrame  {
             } else if (!serverRemoved) {
                 corp.addServerAccessed(corp.getServerByNumber(((CorpCard)card).getServerNumber()));
             }
-            //renderCorpBoard(corp);
+            corp.cleanupServers();
         } else if ("expose asset".equals(command)) {
             if (corp.getServers().size() > 3) {
                 System.out.println("Which server?");
@@ -337,7 +361,9 @@ public class WebwalkerGame extends JFrame  {
             //renderCorpBoard(corp);
         } else if ("host program".equals(command)) {
             String cardName = getStringFromUser("What program?");
-            ((CorpCard) card).setHostedCard(cardName);
+            if (cardName != null && !cardName.isEmpty()) {
+                ((CorpCard) card).setHostedCard(cardName);
+            }
             //renderCorpBoard(corp);
         } else if ("unhost program".equals(command)) {
             ((CorpCard) card).setHostedCard("");
@@ -347,21 +373,21 @@ public class WebwalkerGame extends JFrame  {
             System.out.println("Servers are numbered left to right, starting with 1.");
             System.out.println("ICE is numbered from top to bottom, starting with 1.");
             System.out.println("Valid commands:");
-            System.out.println("rez ice");
+            //System.out.println("rez ice");
             System.out.println("derez ice");
-            System.out.println("trash ice");
+            //System.out.println("trash ice");
             System.out.println("access server");
-            System.out.println("expose asset");
-            System.out.println("expose ice");
-            System.out.println("mill RnD");
-            System.out.println("adjust creds");
+            //System.out.println("expose asset");
+            //System.out.println("expose ice");
+            //System.out.println("mill RnD");
+            //System.out.println("adjust creds");
             System.out.println("install program");
             System.out.println("trash program");
-            System.out.println("add virus");
-            System.out.println("play current");
+            //System.out.println("add virus");
+            //System.out.println("play current");
             System.out.println("host program");
             System.out.println("unhost program");
-            System.out.println("end turn\n");
+            //System.out.println("end turn\n");
         } else if ("^C".equals(command)) {
             System.out.println("Command \"" + command + "\" not recognized.  Type \"help\" for ArrayList of valid commands.");
         } 
@@ -445,7 +471,7 @@ public class WebwalkerGame extends JFrame  {
         for (int i=serverAssets.size()-1; i<=0; i--) {
             if(serverAssets.size() > 0 && i >= 0) {
                 CorpCard c = serverAssets.get(i);
-                if (preAccessAssets.contains(c.getActualName())) {
+                if (!server.isRnD() && preAccessAssets.contains(c.getActualName())) {
                     if (!c.isRezzed() && c.getCost() <= corp.getDisplayCreds()) {
                         corp.spendCreds(c.getCost());
                         c.rez();
@@ -471,37 +497,6 @@ public class WebwalkerGame extends JFrame  {
         ArrayList<CorpCard> cardsToSteal = new ArrayList<CorpCard>();
         numberAccessed = (numberAccessed > serverAssets.size()) ? serverAssets.size() : numberAccessed;
         System.out.println("Accessing " + numberAccessed + " cards.");
-        if (server.isArchives()) {
-            for (int i=0; i<numberAccessed;i++) {
-                CorpCard card = serverAssets.get(i);
-                if (card.isAgenda()) {
-                    System.out.println("Accessing: " + card.getActualName() + ". Steal or leave?");
-                } else if (card.isTrap(server.getName())) {
-                    System.out.println("Accessing: " + card.getActualName() + ".");
-                    if (!(card.getCost() > corp.getDisplayCreds())) {
-                        corp.spendReservedCreds(card.getCost());
-                        System.out.println("Corp spends " + card.getCost() + " to trigger trap.");
-                    }
-                    System.out.println("Trash " + card.getActualName() + " for " + card.getTrashCost() + " or leave?");
-                } else {
-                    System.out.println("Accessing: " + card.getActualName() + ". Press enter to continue.");
-                }
-                String command = getStringFromUser("Access command:");
-                if ("steal".equals(command)) {
-                    boolean meetsAdditionalAgendaConditions = CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server);
-                    if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, server, null, true)))) {
-                        runnerPoints = runnerPoints + card.getScoreValue();
-                        cardsToSteal.add(card);
-                        System.out.println("Runner steals agenda and has " + runnerPoints + " points");
-                    } else {
-                        System.out.println("Cannot steal card");
-                        if (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || !meetsAdditionalAgendaConditions) {
-                            i--;
-                        }
-                    }
-                }
-            }
-        } else {
             for (int i=0; i<numberAccessed;i++) {
                 CorpCard card = serverAssets.get(i);
 
@@ -520,7 +515,27 @@ public class WebwalkerGame extends JFrame  {
                     System.out.println("Accessing: " + card.getActualName() + ". Leave or trash with special ability?");
                 }
                 ImageIcon icon = new ImageIcon("img\\" +  ((CorpCard) card).getActualName() + ".png");
-                Object[] possibilities = {"steal", "trash", "continue", "jack out"};
+                Object[] possibilities = null;
+                if (server.isArchives()) {
+                    if (card.isAgenda()) {
+                        Object[] agendaCommands = {"steal","continue","jack out"};
+                        possibilities = agendaCommands;
+                    } else {
+                        Object[] otherCommands = {"continue", "jack out"};
+                        possibilities = otherCommands;
+                    }
+                } else {
+                    if (card.isAgenda()) {
+                        Object[] agendaCommands = {"steal","trash (with special ability)","continue","jack out"};
+                        possibilities = agendaCommands;
+                    } else if (card.isAsset()) {
+                        Object[] assetCommands = {"trash for " + card.getTrashCost(),"continue","jack out"};
+                        possibilities = assetCommands;
+                    } else {
+                        Object[] otherCommands = {"trash (with special ability)", "continue", "jack out"};
+                        possibilities = otherCommands;
+                    }
+                }
                 String command = (String)JOptionPane.showInputDialog(
                     frame,
                     null,
@@ -530,9 +545,9 @@ public class WebwalkerGame extends JFrame  {
                     possibilities,
                     "continue");
                 //String command = getStringFromUser("Access command");
-                if ("trash".equals(command)) {
+                if (command != null && command.contains("trash")) {
                     cardsToTrash.add(card);
-                } else if ("steal".equals(command)) {
+                } else if (command != null && "steal".equals(command)) {
                     boolean meetsAdditionalAgendaConditions = CardAbility.getInstance().meetsAdditionalAgendaConditions(corp, server);
                     if (card.isAgenda() && meetsAdditionalAgendaConditions &&  (!CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) || (CardAbility.getInstance().getConditionalAgendas().contains(card.getActualName()) && CardAbility.getInstance().activate(card, corp, server, null, true)))) {
                         runnerPoints = runnerPoints + card.getScoreValue();
@@ -547,7 +562,7 @@ public class WebwalkerGame extends JFrame  {
                 } else if ("jack out".equals(command)) {
                     break;
                 }
-            }
+       //     }
         }
         for (int i = cardsToTrash.size()-1; i>=0; i--) {
             corp.trashCardFromServer(cardsToTrash.get(i), server);
@@ -826,7 +841,8 @@ public class WebwalkerGame extends JFrame  {
                 if(e.getButton() == MouseEvent.BUTTON1 && !menuShowing) {
                     int xCoord = e.getX();
                     int yCoord = e.getY();
-                    int serverNumber = (e.getX()-30) / 225;
+                    int serverNumber = (e.getX()-50) / 150;
+                    //System.out.println("hey server number " + serverNumber);
                     server = corp.getServerByNumber(serverNumber);
                     if (server != null) {
                         server.toggleZoom(xCoord, yCoord, true);
@@ -872,6 +888,8 @@ public class WebwalkerGame extends JFrame  {
     JMenuItem adjustCredsItem;
     JMenuItem addVirusItem;
     JMenuItem accessServerItem;
+    JMenuItem hostProgramItem;
+    JMenuItem unhostProgramItem;
         public RunnerContextMenu(Card card){
             trashIceItem = new JMenuItem("trash ice");
             endTurnItem = new JMenuItem("end turn");
@@ -885,6 +903,8 @@ public class WebwalkerGame extends JFrame  {
             adjustCredsItem = new JMenuItem("adjust creds");
             addVirusItem = new JMenuItem("add virus");
             accessServerItem = new JMenuItem("access server");
+            hostProgramItem = new JMenuItem("host program");
+            unhostProgramItem = new JMenuItem("unhost program");
             trashIceItem.addActionListener(new MenuActionListener(card));
             endTurnItem.addActionListener(new MenuActionListener(card));
             playCurrentItem.addActionListener(new MenuActionListener(card));
@@ -897,6 +917,8 @@ public class WebwalkerGame extends JFrame  {
             adjustCredsItem.addActionListener(new MenuActionListener(card));
             addVirusItem.addActionListener(new MenuActionListener(card));
             accessServerItem.addActionListener(new MenuActionListener(card));
+            hostProgramItem.addActionListener(new MenuActionListener(card));
+            unhostProgramItem.addActionListener(new MenuActionListener(card));
             if (card == null) {
                 add(playCurrentItem);
                 add(installProgramItem);
@@ -911,6 +933,11 @@ public class WebwalkerGame extends JFrame  {
                 }
                 if (card != null && ((CorpCard)card).isIce()) {
                     add(trashIceItem);
+                    if (((CorpCard)card).getHostedCard().isEmpty()) {
+                        add(hostProgramItem);
+                    } else {
+                        add(unhostProgramItem);
+                    }                 
                     if (((CorpCard)card).isRezzed()) {
                         add(derezIceItem);
                     } else {
@@ -936,7 +963,32 @@ public class WebwalkerGame extends JFrame  {
             executeCommand(e.getActionCommand(), card);
         }
     }
+    /*
+    private static Font getFont(String name) {
+        Font font = null;
+        if (name == null) {
+            return SERIF_FONT;
+        }
+        try {
+            // load from a cache map, if exists
+            if (fonts != null && (font = fonts.get(name)) != null) {
+                return font;
+            }
+            File fontFile = new File("img\\" + getName() + ".png");
+            font = Font.createFont(Font.TRUETYPE_FONT, fontFile);
+            GraphicsEnvironment ge = GraphicsEnvironment
+                    .getLocalGraphicsEnvironment();
 
+            ge.registerFont(font);
+
+            fonts.put(name, font);
+        } catch (Exception ex) {
+            System.out.println(name + " not loaded.  Using serif font.");
+            font = SERIF_FONT;
+        }
+        return font;
+    }
+    */
     public void refreshBoard() {
         corp.boardHeight = this.getContentPane().getHeight();
         corp.repaint();

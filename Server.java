@@ -28,8 +28,8 @@ public class Server extends JComponent {
 
     public Server(CorpCard card, int serverNumber) {
         this.serverNumber = serverNumber;
-        card.setXCoord(30+(serverNumber*225));
-        int yCoord = (card.isIce() ? ((ice.size())*225) + 275 : 30);
+        card.setXCoord(30+(serverNumber*150));
+        int yCoord = (card.isIce() ? ((ice.size())*150) + 175 : 30);
         card.setYCoord(yCoord);
         card.setServerNumber(serverNumber);
         if (card.isIce()) {
@@ -40,13 +40,14 @@ public class Server extends JComponent {
                 asset = card;
             }
         }
+        System.out.println("hey server " + serverNumber + " " + 30+(serverNumber*150) + " " + yCoord);
     }
 
     public Server (String centralType, int serverNumber) {
         this.name = centralType;
         this.serverNumber = serverNumber;
         this.asset = new CorpCard(centralType, "Central");
-        asset.setXCoord(30+(serverNumber*225));
+        asset.setXCoord(30+(serverNumber*150));
         asset.setYCoord(30);
         asset.setServerNumber(serverNumber);
     }
@@ -96,6 +97,17 @@ public class Server extends JComponent {
     public void removeAsset() {
         asset = null;
     }
+    public void setServerNumber(int serverNumber) {
+        this.serverNumber = serverNumber;
+        if (asset != null) {
+            asset.setServerNumber(serverNumber);
+            asset.setXCoord(30 + (serverNumber*150));
+        }
+        for (CorpCard c : ice) {
+            c.setServerNumber(serverNumber);
+            c.setXCoord(30 + (serverNumber*150));
+        }
+    }
     public void refreshCards(Graphics g) {
         if (!ice.isEmpty()) {
             int i = 0;
@@ -110,13 +122,13 @@ public class Server extends JComponent {
     public void addCard(CorpCard card) {
         card.setServerNumber(serverNumber);
         if (card.isIce()) {
-            card.setXCoord(30 + (serverNumber*225));
-            card.setYCoord((ice.size()*175)+275);
+            card.setXCoord(30 + (serverNumber*150));
+            card.setYCoord((ice.size()*125)+175);
             card.setIcePosition(ice.size());
             ice.add(card);
         } else if (card.isAsset() || card.isAgenda()) {
             assets.add(card);
-            card.setXCoord(30+((serverNumber*225)+assets.size()*5));
+            card.setXCoord(30+((serverNumber*150)+assets.size()*5));
             card.setYCoord(30+(assets.size()*5));
             if (!card.isUpgrade()) {
                 asset = card;

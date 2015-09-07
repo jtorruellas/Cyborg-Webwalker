@@ -42,10 +42,14 @@ public class RunnerCard extends Card {
     }
     public void loadImage() {
         try {
-            System.out.println("hey loadImage " + "img\\" + getName() + ".png");
-            bigImage = ImageIO.read(new File("img\\" + getName() + ".png"));
-            smallImage = getScaledImage(bigImage,150,209);
-        } catch (IOException ex) {
+            File img = new File("img\\" + getName() + ".png");
+            if (!img.exists()) {
+                img = new File("img\\Runner.png");
+            }
+            //System.out.println("hey loadImage " + "img\\" + getName() + ".png");
+            bigImage = ImageIO.read(img);
+            smallImage = getScaledImage(bigImage,100,139);
+        } catch (Exception ex) {
             System.out.println("hey missing " + "img\\" + getName() + ".png");
         }
     }
@@ -53,18 +57,21 @@ public class RunnerCard extends Card {
         draw(g);
     }
     public void draw (Graphics g){
-        //super.paintComponent(g);
+        int virusX = (xCoord+smallImage.getWidth()/2);
+        int virusY = (yCoord+smallImage.getHeight()/2);
         if (smallImage != null && !zoomedImage) {
             g.drawImage(smallImage, xCoord, yCoord, null);
         } else if (bigImage != null && zoomedImage) {
-            g.drawImage(bigImage, xCoord, yCoord-209, null);
+            virusX = (xCoord+bigImage.getWidth()/2);
+            virusY = (yCoord-270+bigImage.getHeight()/2);
+            g.drawImage(bigImage, xCoord, yCoord-270, null);
         }
         if (virusCounters > 0) {
             g.setColor(Color.red);
-            g.fillOval((xCoord+smallImage.getWidth()/2)-20, (yCoord+smallImage.getHeight()/2)-20, 40, 40);
+            g.fillOval(virusX-20, virusY-20, 40, 40);
             g.setColor(Color.black);
             g.setFont(new Font("OCR A Extended", Font.BOLD, 32));
-            g.drawString(virusCounters + "", xCoord+(smallImage.getWidth()/2)-11, yCoord+(smallImage.getHeight()/2)+11);
+            g.drawString(virusCounters + "", virusX-11, virusY+11);
             //System.out.println("hey printed adv");
         }
     }
@@ -88,9 +95,9 @@ public class RunnerCard extends Card {
             new BufferedImage(width, height, image.getType()));
     }
     public boolean checkClickLocation(int xClick, int yClick, boolean zoom) {
-        int cardHeight = 209;
-        int cardWidth= 150;
-        boolean isIt = xClick > (xCoord + 20) && xClick < (xCoord + cardWidth + 20) && yClick > (yCoord + 30) && yClick < (yCoord + cardHeight + 30);
+        int cardHeight = 140;
+        int cardWidth= 100;
+        boolean isIt = xClick > (xCoord + 20) && xClick < (xCoord + cardWidth + 20) && yClick > (yCoord + 45) && yClick < (yCoord + cardHeight + 45);
         if (zoom) {
             if (!zoomedImage && isIt) { 
                 zoomedImage = true;

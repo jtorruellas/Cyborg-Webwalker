@@ -176,7 +176,9 @@ public class Corp extends JComponent{
                     */
                     spendReservedCreds(asset.getCost());
                     asset.rez();
-                    System.out.println("Corp rezzes " + asset.getName() + " for " + asset.getCost() + " creds");
+                    if (server.isRemote()) {
+                        System.out.println("Corp rezzes " + asset.getName() + " for " + asset.getCost() + " creds");
+                    }
                 }
                 
                 if (preTurnAssets.contains(asset.getActualName())) {
@@ -453,6 +455,10 @@ public class Corp extends JComponent{
         for (Server server : serversToRemove) {
             c_servers.remove(server);
         }
+        int i=0;
+        for (Server server : c_servers) {
+            server.setServerNumber(i++);
+        }
     }
     public boolean cleanupServer(int serverNumber) {
         Server server = getServerByNumber(serverNumber);
@@ -488,8 +494,8 @@ public class Corp extends JComponent{
     }
     public void addRunnerCard(String cardName) {
         RunnerCard runnerCard = new RunnerCard(cardName);
-        System.out.println("hey setXCoord " + (30+(runnerCards.size()*175)));
-        System.out.println("hey setYCoord " + (boardHeight-209));
+        //System.out.println("hey setXCoord " + (30+(runnerCards.size()*175)));
+        //System.out.println("hey setYCoord " + (boardHeight-209));
         runnerCard.setXCoord(30+(runnerCards.size()*175));
         runnerCard.setYCoord(boardHeight-209);
         runnerCards.put(cardName, runnerCard);
@@ -935,7 +941,7 @@ public boolean tryPlayingCard(ArrayList<CorpCard> playable) {
         }
         for (RunnerCard c : runnerCards.values()) {
             c.setXCoord(30+((runnerCards.size()-1)*175));
-            c.setYCoord(boardHeight-300);
+            c.setYCoord(boardHeight-250);
             c.draw(g);
         }
     }

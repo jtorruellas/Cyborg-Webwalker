@@ -53,9 +53,9 @@ public class CorpCard extends Card
             bigImage = ImageIO.read(new File("img\\" + getName() + ".png"));
             try {
                 if (isIce()) {
-                    smallImage = getScaledImage(bigImage,209,150);
+                    smallImage = getScaledImage(bigImage,139,100);
                 } else {
-                    smallImage = getScaledImage(bigImage,150,209);
+                    smallImage = getScaledImage(bigImage,100,139);
                 }
                 
             } catch(IOException ex) {
@@ -76,9 +76,13 @@ public class CorpCard extends Card
     }
     public void draw (Graphics g){
         //super.paintComponent(g);
+        int advancementX = (xCoord+smallImage.getWidth()/2);
+        int advancementY = (yCoord+smallImage.getHeight()/2);
         if (smallImage != null && !zoomedImage) {
             g.drawImage(smallImage, xCoord, yCoord, null);
         } else if (bigImage != null && zoomedImage) {
+            advancementX = (xCoord+bigImage.getWidth()/2);
+            advancementY = (yCoord+bigImage.getHeight()/2);
             if (isIce()) {
                 double rotationRequired = Math.toRadians (-90);
                 AffineTransform tx = AffineTransform.getRotateInstance(rotationRequired, (bigImage.getWidth()), (bigImage.getHeight()));
@@ -90,10 +94,10 @@ public class CorpCard extends Card
         }
         if (advancement > 0) {
             g.setColor(Color.white);
-            g.fillOval((xCoord+smallImage.getWidth()/2)-20, (yCoord+smallImage.getHeight()/2)-20, 40, 40);
+            g.fillOval(advancementX-20, advancementY-20, 40, 40);
             g.setColor(Color.black);
             g.setFont(new Font("OCR A Extended", Font.BOLD, 32));
-            g.drawString(advancement + "", xCoord+(smallImage.getWidth()/2)-11, yCoord+(smallImage.getHeight()/2)+11);
+            g.drawString(advancement + "", advancementX-11, advancementY+11);
             //System.out.println("hey printed adv");
         }
     }
@@ -105,7 +109,7 @@ public class CorpCard extends Card
         double scaleX = (double)width/imageWidth;
         double scaleY = (double)height/imageHeight;
         AffineTransform scaleTransform = AffineTransform.getScaleInstance(scaleX, scaleY);
-        AffineTransformOp bilinearScaleOp = new AffineTransformOp(scaleTransform, AffineTransformOp.TYPE_BILINEAR);
+        AffineTransformOp bilinearScaleOp = new AffineTransformOp(scaleTransform, AffineTransformOp.TYPE_BICUBIC);
 
         return bilinearScaleOp.filter(
             image,
@@ -240,14 +244,19 @@ public class CorpCard extends Card
     }
     public void derez() {
         rezzed = false;
+        loadImage();
     }
     public int getCounters() {
         return counters;
     }
     public boolean checkClickLocation(int xClick, int yClick, boolean zoom) {
-        int cardHeight = (isIce()) ? 150 : 209;
-        int cardWidth= (isIce()) ? 209 : 150;
-        boolean isIt = xClick > (xCoord + 20) && xClick < (xCoord + cardWidth + 20) && yClick > (yCoord + 30) && yClick < (yCoord + cardHeight + 30);
+        int cardHeight = (isIce()) ? 100 : 140;
+        int cardWidth= (isIce()) ? 140 : 100;
+        boolean isIt = xClick > (xCoord + 20) && xClick < (xCoord + cardWidth + 20) && yClick > (yCoord + 45) && yClick < (yCoord + cardHeight + 45);
+        //System.out.println("hey xC " + xCoord);
+        //System.out.println("hey yC " + yCoord);
+        //System.out.println("hey x " + xCoord);
+        //System.out.println("hey y " + yCoord);
         if (zoom) {
             if (!zoomedImage && isIt) { 
                 zoomedImage = true;
